@@ -47,6 +47,6 @@ def test_client(app: FastAPI) -> Generator[TestClient]:
 class TestFastApi:
     def test_inject_service(self, test_client: TestClient) -> None:
         response = test_client.get("/service-with-no-dependencies")
+        response = test_client.get("/service-with-no-dependencies")
 
         assert response.status_code == HTTPStatus.OK
-        # assert response.json() == {"number": 4, "lucky_number": 42}

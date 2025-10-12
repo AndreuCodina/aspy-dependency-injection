@@ -1,6 +1,5 @@
 import functools
 import inspect
-from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from inspect import Parameter
@@ -13,7 +12,7 @@ from starlette.websockets import WebSocket
 from aspy_dependency_injection.types import InjectableType
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Callable
+    from collections.abc import AsyncGenerator, Callable, Sequence
 
     from fastapi import FastAPI
     from starlette.routing import BaseRoute
@@ -25,18 +24,17 @@ if TYPE_CHECKING:
 current_request: ContextVar[Request | WebSocket] = ContextVar("aspy_starlette_request")
 
 
-
 def _update_lifespan(app: FastAPI, services: ServiceCollection) -> None:
     old_lifespan = app.router.lifespan_context
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[Any]:
+    async def new_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
         async with old_lifespan(app) as state:
             yield state
 
         await services.uninitialize()
 
-    app.router.lifespan_context = lifespan
+    app.router.lifespan_context = new_lifespan
 
 
 class _AspyAsgiMiddleware:
@@ -128,13 +126,12 @@ def inject_from_container(
 ) -> Callable[..., Any]:
     @functools.wraps(target)
     async def _inject_async_target(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        injected_parameters = get_parameters_to_inject(target)
-        resolved_injected_parameters: dict[str, Any] = {
+        parameters_to_inject = get_parameters_to_inject(target)
+        parameters_to_inject_resolved: dict[str, Any] = {
             injected_parameter_name: services.get(injected_parameter_class)
-            for injected_parameter_name, injected_parameter_class in injected_parameters.items()
+            for injected_parameter_name, injected_parameter_class in parameters_to_inject.items()
         }
-        # injected_parameters = {}
-        return await target(*args, **{**kwargs, **resolved_injected_parameters})
+        return await target(*args, **{**kwargs, **parameters_to_inject_resolved})
 
     return _inject_async_target
 
@@ -164,16 +161,10 @@ def get_parameters_to_inject(
         if injectable_dependency is None:
             continue
 
-        result[parameter_name] = parameter.annotation.__args__[0]
+        service_type = parameter.annotation.__args__[0]
+        result[parameter_name] = service_type
 
     return result
-
-    # return {
-    #     name: param
-    #     for name, parameter in inspect.signature(target).parameters.items()
-    #     if (param := param_get_annotation(parameter, globalns=get_globals(target)))
-    #     and isinstance(param.annotation, InjectableType)
-    # }
 
 
 def get_injectable_dependency(metadata: Sequence[Any]) -> InjectableType | None:
