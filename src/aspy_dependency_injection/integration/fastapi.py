@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from starlette.types import ASGIApp, Receive, Scope, Send
 
     from aspy_dependency_injection.service_collection import ServiceCollection
-    from aspy_dependency_injection.types import AnyCallable
 
 current_request: ContextVar[Request | WebSocket] = ContextVar("aspy_starlette_request")
 
@@ -63,7 +62,7 @@ class _AspyAsgiMiddleware:
 
 
 def are_annotated_parameters_with_aspy_dependencies(
-    target: AnyCallable,
+    target: Callable[..., Any],
 ) -> bool:
     for parameter in inspect.signature(target).parameters.values():
         if parameter.annotation is not None and isinstance(
@@ -113,7 +112,7 @@ def get_request_container() -> ServiceCollection:
 
 
 def get_parameters_to_inject(
-    target: AnyCallable,
+    target: Callable[..., Any],
 ) -> dict[str, type[Any]]:
     result: dict[str, type[Any]] = {}
 

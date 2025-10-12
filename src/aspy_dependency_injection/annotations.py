@@ -13,8 +13,6 @@ def Inject() -> InjectableType:  # noqa: N802
         def _inner() -> InjectableType:
             return res
 
-        # This will act as a flag so that aspy knows this dependency belongs to it.
-        _inner.__is_aspy_depends__ = True  # type: ignore[attr-defined]
-        return importlib.import_module("fastapi").Depends(_inner)  # type: ignore[no-any-return]
+        return importlib.import_module("fastapi").Depends(_inner)
 
     return res
