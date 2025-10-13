@@ -115,8 +115,8 @@ def get_request_container() -> ServiceScope:
 
 def get_parameters_to_inject(
     target: Callable[..., Any],
-) -> dict[str, type[Any]]:
-    result: dict[str, type[Any]] = {}
+) -> dict[str, type]:
+    result: dict[str, type] = {}
 
     for parameter_name, parameter in inspect.signature(target).parameters.items():
         if parameter.annotation is Parameter.empty:

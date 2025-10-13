@@ -1,7 +1,10 @@
+from typing import Final
+
+
 class ServiceIdentifier:
     """Internal registered service during resolution."""
 
-    service_type: type
+    service_type: Final[type]
 
     def __init__(self, service_type: type) -> None:
         self.service_type = service_type
