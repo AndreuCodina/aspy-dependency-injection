@@ -149,3 +149,8 @@ def setup(app: FastAPI, services: ServiceCollection) -> None:
     app.add_middleware(_AspyAsgiMiddleware)
     _update_lifespan(app, services)
     _inject_routes(app.routes, services)
+
+
+class FastApiDependencyInjection:
+    def setup(self, app: FastAPI, services: ServiceCollection) -> None:
+        setup(app, services)
