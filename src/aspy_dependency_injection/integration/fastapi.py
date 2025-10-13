@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from starlette.types import ASGIApp, Receive, Scope, Send
 
     from aspy_dependency_injection.service_collection import ServiceCollection
+    from aspy_dependency_injection.service_scope import ServiceScope
 
 current_request: ContextVar[Request | WebSocket] = ContextVar("aspy_starlette_request")
 
@@ -52,10 +53,11 @@ class _AspyAsgiMiddleware:
         token = current_request.set(request)
         try:
             # async with request.app.state.aspy_services.create_scope() as service_scope:
-            #     request.state.service_scope = service_scope
-            #     await self.app(scope, receive, send)
-            service_scope = request.app.state.aspy_services.create_scope()
-            request.state.service_scope = service_scope
+            #     request.state.service_scope = service_scope  # noqa: ERA001
+            #     await self.app(scope, receive, send)  # noqa: ERA001
+            services: ServiceCollection = request.app.state.aspy_services
+            service_scope = services.create_scope()
+            request.state.aspy_service_scope = service_scope
             await self.app(scope, receive, send)
         finally:
             current_request.reset(token)
@@ -73,7 +75,7 @@ def are_annotated_parameters_with_aspy_dependencies(
     return False
 
 
-def _inject_routes(routes: list[BaseRoute], services: ServiceCollection) -> None:
+def _inject_routes(routes: list[BaseRoute]) -> None:
     for route in routes:
         if not (
             isinstance(route, APIRoute)
@@ -84,17 +86,17 @@ def _inject_routes(routes: list[BaseRoute], services: ServiceCollection) -> None
         ):
             continue
 
-        route.dependant.call = inject_from_container(route.dependant.call, services)
+        route.dependant.call = inject_from_container(route.dependant.call)
 
 
-def inject_from_container(
-    target: Callable[..., Any], services: ServiceCollection
-) -> Callable[..., Any]:
+def inject_from_container(target: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(target)
     async def _inject_async_target(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         parameters_to_inject = get_parameters_to_inject(target)
         parameters_to_inject_resolved: dict[str, Any] = {
-            injected_parameter_name: services.get(injected_parameter_class)
+            injected_parameter_name: get_request_container().get_service(
+                injected_parameter_class
+            )
             for injected_parameter_name, injected_parameter_class in parameters_to_inject.items()
         }
         return await target(*args, **{**kwargs, **parameters_to_inject_resolved})
@@ -102,13 +104,13 @@ def inject_from_container(
     return _inject_async_target
 
 
-def get_request_container() -> ServiceCollection:
+def get_request_container() -> ServiceScope:
     """When inside a request, returns the scoped container instance handling the current request.
 
     This is what you almost always want.It has all the information the app container has in addition
     to data specific to the current request.
     """
-    return current_request.get().state.service_scope
+    return current_request.get().state.aspy_service_scope
 
 
 def get_parameters_to_inject(
@@ -148,7 +150,7 @@ def setup(app: FastAPI, services: ServiceCollection) -> None:
     app.state.aspy_services = services
     app.add_middleware(_AspyAsgiMiddleware)
     _update_lifespan(app, services)
-    _inject_routes(app.routes, services)
+    _inject_routes(app.routes)
 
 
 class FastApiDependencyInjection:
