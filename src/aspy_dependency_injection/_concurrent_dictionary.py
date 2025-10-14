@@ -36,6 +36,7 @@ class ConcurrentDictionary(dict[TKey, TValue]):
     def get_or_add(self, key: TKey, value_factory: Callable[[TKey], TValue]) -> TValue:
         if key not in self._dict:
             self._dict[key] = value_factory(key)
+
         return self._dict[key]
 
     # def get_or_add(self, key: TKey, value_factory: Callable[[TKey], TValue]) -> TValue:

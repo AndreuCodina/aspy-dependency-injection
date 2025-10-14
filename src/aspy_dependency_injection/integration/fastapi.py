@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from starlette.types import ASGIApp, Receive, Scope, Send
 
     from aspy_dependency_injection.service_collection import ServiceCollection
-    from aspy_dependency_injection.service_scope import ServiceScope
+    from aspy_dependency_injection.service_provider import ServiceScope
 
 current_request: ContextVar[Request | WebSocket] = ContextVar("aspy_starlette_request")
 
@@ -56,7 +56,8 @@ class _AspyAsgiMiddleware:
             #     request.state.service_scope = service_scope  # noqa: ERA001
             #     await self.app(scope, receive, send)  # noqa: ERA001
             services: ServiceCollection = request.app.state.aspy_services
-            service_scope = services.create_scope()
+            service_provider = services.build_service_provider()
+            service_scope = service_provider.create_scope()
             request.state.aspy_service_scope = service_scope
             await self.app(scope, receive, send)
         finally:

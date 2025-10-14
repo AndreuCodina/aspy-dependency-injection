@@ -6,9 +6,11 @@ class TestServiceCollection:
     def test_resolve_trasient_service(self) -> None:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
-        service_scope = services.create_scope()
+        service_scope = services.build_service_provider().create_scope()
 
-        resolved_service = service_scope.get_service(ServiceWithNoDependencies)
+        resolved_service = service_scope.service_provider.get_service(
+            ServiceWithNoDependencies
+        )
 
         assert isinstance(resolved_service, ServiceWithNoDependencies)
 
@@ -16,9 +18,11 @@ class TestServiceCollection:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
         services.add_transient(ServiceWithDependencies)
-        service_scope = services.create_scope()
+        service_scope = services.build_service_provider().create_scope()
 
-        resolved_service = service_scope.get_service(ServiceWithDependencies)
+        resolved_service = service_scope.service_provider.get_service(
+            ServiceWithDependencies
+        )
 
         assert isinstance(resolved_service, ServiceWithDependencies)
         assert isinstance(

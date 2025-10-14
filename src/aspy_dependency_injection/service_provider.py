@@ -1,49 +1,80 @@
 import inspect
-from typing import TYPE_CHECKING, final, get_type_hints
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Final, Self, final, get_type_hints
 
 from aspy_dependency_injection._concurrent_dictionary import ConcurrentDictionary
 from aspy_dependency_injection.service_identifier import ServiceIdentifier
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import TracebackType
+
     from aspy_dependency_injection.service_collection import ServiceCollection
 
 
+class ServiceProvider(ABC):
+    @abstractmethod
+    def get_service(self, service_type: type) -> object | None: ...
+
+    @abstractmethod
+    def create_scope(self) -> ServiceScope: ...
+
+
 @final
-class ServiceProvider:
+@dataclass
+class _ServiceAccessor:
+    realized_service: Callable[[ServiceProviderEngineScope], object | None]
+
+
+@final
+class DefaultServiceProvider(ServiceProvider):
     """Provider that resolves services."""
 
-    services: ServiceCollection
-    _service_accessors: ConcurrentDictionary[ServiceIdentifier, object | None]
+    _services: ServiceCollection
+    _service_accessors: ConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
 
     def __init__(self, services: ServiceCollection) -> None:
-        self.services = services
+        self._services = services
         self._service_accessors = ConcurrentDictionary()
-        # Root = new ServiceProviderEngineScope(this, isRootScope: true);
+        self._root = ServiceProviderEngineScope(self)
 
     def get_service(self, service_type: type) -> object | None:
-        return self._get_service_from_service_identifier(
+        return self.get_service_from_service_identifier(
             ServiceIdentifier.from_service_type(service_type)
         )
 
-    def _get_service_from_service_identifier(
+    # # @asynccontextmanager
+    def create_scope(self) -> ServiceScope:  # AsyncGenerator[ServiceScope]:
+        """Create a new ServiceScope that can be used to resolve scoped services."""
+        # async with DefaultServiceScope(service_provider=self) as service_scope:
+        #     print("TODO")  # noqa: ERA001
+        # yield service_scope
+        return ServiceProviderEngineScope(service_provider=self)
+
+    def get_service_from_service_identifier(
         self, service_identifier: ServiceIdentifier
     ) -> object | None:
-        for descriptor in self.services.descriptors:
+        for descriptor in self._services.descriptors:
             if descriptor.service_type == service_identifier.service_type:
-                return self.create_instance(descriptor.service_type)
+                return self._create_instance(descriptor.service_type)
 
         return None
 
-    # def _create_service_accessor(
-    #     self, service_identifier: ServiceIdentifier
-    # ) -> object | None:
-    #     pass
+    def _create_service_accessor(
+        self, service_identifier: ServiceIdentifier
+    ) -> _ServiceAccessor:
+        return _ServiceAccessor(
+            realized_service=lambda service_scope: service_scope.get_service(
+                service_identifier.service_type
+            )
+        )
 
-    def create_instance(self, service_type: type) -> object:
+    def _create_instance(self, service_type: type) -> object:
         """Recursively create an instance of the service type."""
         is_service_registered = any(
             descriptor.service_type == service_type
-            for descriptor in self.services.descriptors
+            for descriptor in self._services.descriptors
         )
         if not is_service_registered:
             error_message = f"Service {service_type} not registered."
@@ -60,9 +91,71 @@ class ServiceProvider:
                 continue
 
             parameter_type = init_type_hints[parameter_name]
-            arguments[parameter_name] = self.create_instance(parameter_type)
+            arguments[parameter_name] = self._create_instance(parameter_type)
 
         if len(arguments) == 0:
             return service_type()
 
         return service_type(**arguments)
+
+
+class ServiceScope:
+    """Defines a disposable service scope.
+
+    The __aexit__ method ends the scope lifetime. Once called, any scoped
+    services that have been resolved from ServiceProvider will be disposed.
+    """
+
+    @property
+    @abstractmethod
+    def service_provider(self) -> ServiceProvider:
+        """Gets the ServiceProvider used to resolve dependencies from the scope."""
+        ...
+
+    @abstractmethod
+    def get_service(self, service_type: type) -> object | None: ...
+
+    @abstractmethod
+    def __aenter__(self) -> Self: ...
+
+    @abstractmethod
+    def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+        /,
+    ) -> bool | None: ...
+
+
+class ServiceProviderEngineScope(ServiceScope):
+    """Container resolving services with scope."""
+
+    _root_provider: Final[DefaultServiceProvider]
+
+    def __init__(self, service_provider: DefaultServiceProvider) -> None:
+        self._root_provider = service_provider
+
+    @property
+    def service_provider(self) -> ServiceProvider:
+        return self._root_provider
+
+    def __aenter__(self) -> Self:
+        return self
+
+    def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+        /,
+    ) -> bool | None:
+        pass
+
+    def create_scope(self) -> ServiceScope:
+        return ServiceProviderEngineScope(self._root_provider)
+
+    def get_service(self, service_type: type) -> object | None:
+        return self._root_provider.get_service_from_service_identifier(
+            ServiceIdentifier.from_service_type(service_type)
+        )
