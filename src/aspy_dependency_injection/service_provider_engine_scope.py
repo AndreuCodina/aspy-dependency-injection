@@ -52,5 +52,6 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
 
     def get_service(self, service_type: type) -> object | None:
         return self._root_provider.get_service_from_service_identifier(
-            ServiceIdentifier.from_service_type(service_type)
+            service_identifier=ServiceIdentifier.from_service_type(service_type),
+            service_provider_engine_scope=self,
         )

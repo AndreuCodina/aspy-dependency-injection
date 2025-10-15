@@ -26,18 +26,20 @@ class DefaultServiceProvider(ServiceProvider):
     """Provider that resolves services."""
 
     _services: ServiceCollection
+    _root: ServiceProviderEngineScope
     _service_accessors: ConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
 
     def __init__(self, services: ServiceCollection) -> None:
         self._services = services
-        self._service_accessors = ConcurrentDictionary()
         self._root = ServiceProviderEngineScope(
             service_provider=self, is_root_scope=True
         )
+        self._service_accessors = ConcurrentDictionary()
 
     def get_service(self, service_type: type) -> object | None:
         return self.get_service_from_service_identifier(
-            ServiceIdentifier.from_service_type(service_type)
+            service_identifier=ServiceIdentifier.from_service_type(service_type),
+            service_provider_engine_scope=self._root,
         )
 
     # # @asynccontextmanager
@@ -49,22 +51,24 @@ class DefaultServiceProvider(ServiceProvider):
         return ServiceProviderEngineScope(service_provider=self, is_root_scope=False)
 
     def get_service_from_service_identifier(
-        self, service_identifier: ServiceIdentifier
+        self,
+        service_identifier: ServiceIdentifier,
+        service_provider_engine_scope: ServiceProviderEngineScope,
     ) -> object | None:
-        for descriptor in self._services.descriptors:
-            if descriptor.service_type == service_identifier.service_type:
-                return self._create_instance(descriptor.service_type)
-
-        return None
+        service_accessor = self._service_accessors.get_or_add(
+            key=service_identifier, value_factory=self._create_service_accessor
+        )
+        return service_accessor.realized_service(service_provider_engine_scope)
 
     def _create_service_accessor(
         self, service_identifier: ServiceIdentifier
     ) -> _ServiceAccessor:
-        return _ServiceAccessor(
-            realized_service=lambda service_scope: service_scope.get_service(
-                service_identifier.service_type
-            )
-        )
+        service: object | None = None
+
+        for descriptor in self._services.descriptors:
+            if descriptor.service_type == service_identifier.service_type:
+                service = self._create_instance(descriptor.service_type)
+        return _ServiceAccessor(realized_service=lambda _: service)
 
     def _create_instance(self, service_type: type) -> object:
         """Recursively create an instance of the service type."""
