@@ -1,6 +1,5 @@
-import inspect
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self, final, get_type_hints
+from typing import TYPE_CHECKING, Self, final
 
 from aspy_dependency_injection._concurrent_dictionary import ConcurrentDictionary
 from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
@@ -82,45 +81,13 @@ class DefaultServiceProvider(ServiceProvider):
             service_identifier, CallSiteChain()
         )
 
-        service: object | None = None
+        if call_site is not None:
+            realized_service = self._engine.realize_service(call_site)
+            return _ServiceAccessor(
+                call_site=call_site, realized_service=realized_service
+            )
 
-        for descriptor in self._services.descriptors:
-            if descriptor.service_type == service_identifier.service_type:
-                service = self._create_instance(descriptor.service_type)
-        return _ServiceAccessor(call_site=call_site, realized_service=lambda _: service)
-
-        # if call_site is not None:
-        #     realized_service = self._engine.realize_service(call_site)  # noqa: ERA001
-
-        # return _ServiceAccessor(call_site=call_site, realized_service=lambda _: None)  # noqa: ERA001
-
-    def _create_instance(self, service_type: type) -> object:
-        """Recursively create an instance of the service type."""
-        is_service_registered = any(
-            descriptor.service_type == service_type
-            for descriptor in self._services.descriptors
-        )
-        if not is_service_registered:
-            error_message = f"Service {service_type} not registered."
-            raise ValueError(error_message)
-
-        init_method = service_type.__init__
-        init_signature = inspect.signature(init_method)
-        init_type_hints = get_type_hints(init_method)
-        parameter_names = init_signature.parameters.keys()
-        arguments: dict[str, object] = {}
-
-        for parameter_name in parameter_names:  # init_signature.parameters.items()
-            if parameter_name in ["self", "args", "kwargs"]:
-                continue
-
-            parameter_type = init_type_hints[parameter_name]
-            arguments[parameter_name] = self._create_instance(parameter_type)
-
-        if len(arguments) == 0:
-            return service_type()
-
-        return service_type(**arguments)
+        return _ServiceAccessor(call_site=call_site, realized_service=lambda _: None)
 
     def _get_engine(self) -> ServiceProviderEngine:
         return RuntimeServiceProviderEngine.INSTANCE

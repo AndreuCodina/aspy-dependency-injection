@@ -1,29 +1,42 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, TypeVar
 
+from aspy_dependency_injection.service_lookup.constructor_call_site import (
+    ConstructorCallSite,
+)
+
 if TYPE_CHECKING:
-    from aspy_dependency_injection.service_lookup.constructor_call_site import (
-        ConstructorCallSite,
+    from aspy_dependency_injection.service_lookup.service_call_site import (
+        ServiceCallSite,
     )
 
 TArgument = TypeVar("TArgument")
 TResult = TypeVar("TResult")
 
 
-class CallSiteVisitor[TArgument, TResult](ABC):  # noqa: B024
-    def _visit_call_site(self, call_site: TArgument, argument: TArgument) -> TResult:
+class CallSiteVisitor[TArgument, TResult](ABC):
+    def _visit_call_site(
+        self, call_site: ServiceCallSite, argument: TArgument
+    ) -> TResult:
         return self._visit_no_cache(call_site, argument)
 
-    def _visit_no_cache(self, call_site: TArgument, argument: TArgument) -> TResult:
+    def _visit_no_cache(
+        self, call_site: ServiceCallSite, argument: TArgument
+    ) -> TResult:
         return self._visit_call_site_main(call_site, argument)
 
     def _visit_call_site_main(
-        self, call_site: TArgument, argument: TArgument
+        self, call_site: ServiceCallSite, argument: TArgument
     ) -> TResult:
-        # return self._visit_constructor((ConstructorCallSite)call_site, argument)
-        raise NotImplementedError
+        if not isinstance(call_site, ConstructorCallSite):
+            error_message = (
+                f"Expected ConstructorCallSite, got {type(call_site).__name__}"
+            )
+            raise TypeError(error_message)
 
+        return self._visit_constructor(call_site, argument)
+
+    @abstractmethod
     def _visit_constructor(
         self, constructor_call_site: ConstructorCallSite, argument: TArgument
-    ) -> TResult:
-        raise NotImplementedError
+    ) -> TResult: ...
