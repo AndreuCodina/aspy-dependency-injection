@@ -7,6 +7,9 @@ from aspy_dependency_injection.abstractions.service_provider import ServiceProvi
 from aspy_dependency_injection.service_identifier import ServiceIdentifier
 from aspy_dependency_injection.service_lookup.call_site_chain import CallSiteChain
 from aspy_dependency_injection.service_lookup.call_site_factory import CallSiteFactory
+from aspy_dependency_injection.service_lookup.runtime_service_provider_engine import (
+    RuntimeServiceProviderEngine,
+)
 from aspy_dependency_injection.service_provider_engine_scope import (
     ServiceProviderEngineScope,
 )
@@ -17,10 +20,17 @@ if TYPE_CHECKING:
 
     from aspy_dependency_injection.abstractions.service_scope import ServiceScope
     from aspy_dependency_injection.service_collection import ServiceCollection
+    from aspy_dependency_injection.service_lookup.service_call_site import (
+        ServiceCallSite,
+    )
+    from aspy_dependency_injection.service_lookup.service_provider_engine import (
+        ServiceProviderEngine,
+    )
 
 
 @dataclass(frozen=True)
 class _ServiceAccessor:
+    call_site: ServiceCallSite | None
     realized_service: Callable[[ServiceProviderEngineScope], object | None]
 
 
@@ -30,6 +40,7 @@ class DefaultServiceProvider(ServiceProvider):
 
     _services: ServiceCollection
     _root: ServiceProviderEngineScope
+    _engine: ServiceProviderEngine
     _service_accessors: ConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
 
     def __init__(self, services: ServiceCollection) -> None:
@@ -37,6 +48,7 @@ class DefaultServiceProvider(ServiceProvider):
         self._root = ServiceProviderEngineScope(
             service_provider=self, is_root_scope=True
         )
+        self._engine = self._get_engine()
         self._service_accessors = ConcurrentDictionary()
         self._call_site_factory = CallSiteFactory(services)
 
@@ -75,7 +87,12 @@ class DefaultServiceProvider(ServiceProvider):
         for descriptor in self._services.descriptors:
             if descriptor.service_type == service_identifier.service_type:
                 service = self._create_instance(descriptor.service_type)
-        return _ServiceAccessor(realized_service=lambda _: service)
+        return _ServiceAccessor(call_site=call_site, realized_service=lambda _: service)
+
+        # if call_site is not None:
+        #     realized_service = self._engine.realize_service(call_site)  # noqa: ERA001
+
+        # return _ServiceAccessor(call_site=call_site, realized_service=lambda _: None)  # noqa: ERA001
 
     def _create_instance(self, service_type: type) -> object:
         """Recursively create an instance of the service type."""
@@ -104,6 +121,9 @@ class DefaultServiceProvider(ServiceProvider):
             return service_type()
 
         return service_type(**arguments)
+
+    def _get_engine(self) -> ServiceProviderEngine:
+        return RuntimeServiceProviderEngine.INSTANCE
 
     async def __aenter__(self) -> Self:
         return self

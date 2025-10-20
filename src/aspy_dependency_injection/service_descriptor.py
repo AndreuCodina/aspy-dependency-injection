@@ -24,3 +24,6 @@ class ServiceDescriptor:
         self = cls(service_type=service_type, lifetime=lifetime)
         self.implementation_type = implementation_type
         return self
+
+    def has_implementation_type(self) -> bool:
+        return self.implementation_type is not None

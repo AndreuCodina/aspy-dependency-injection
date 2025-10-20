@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Final, Self
+from typing import TYPE_CHECKING, Final, Self, final
 
 from aspy_dependency_injection.abstractions.service_scope import ServiceScope
 from aspy_dependency_injection.abstractions.service_scope_factory import (
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     )
 
 
+@final
 class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
     """Container resolving services with scope."""
 
