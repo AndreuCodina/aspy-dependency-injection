@@ -1,7 +1,9 @@
-from threading import RLock
+import asyncio
 from typing import TYPE_CHECKING, ClassVar, final
 
-from aspy_dependency_injection._concurrent_dictionary import ConcurrentDictionary
+from aspy_dependency_injection._async_concurrent_dictionary import (
+    AsyncConcurrentDictionary,
+)
 from aspy_dependency_injection.service_identifier import ServiceIdentifier
 from aspy_dependency_injection.service_lookup.constructor_call_site import (
     ConstructorCallSite,
@@ -20,12 +22,14 @@ if TYPE_CHECKING:
 class CallSiteFactory:
     _DEFAULT_SLOT: ClassVar[int] = 0
 
-    _call_site_locks: ConcurrentDictionary[ServiceIdentifier, RLock]
+    _call_site_locks: AsyncConcurrentDictionary[ServiceIdentifier, asyncio.Lock]
     _descriptor_lookup: dict[ServiceIdentifier, _ServiceDescriptorCacheItem]
     _descriptors: list[ServiceDescriptor]
 
     def __init__(self, services: ServiceCollection) -> None:
-        self._call_site_locks = ConcurrentDictionary[ServiceIdentifier, RLock]()
+        self._call_site_locks = AsyncConcurrentDictionary[
+            ServiceIdentifier, asyncio.Lock
+        ]()
         self._descriptor_lookup = {}
         self._descriptors = services.descriptors.copy()
         self._populate()
@@ -38,21 +42,24 @@ class CallSiteFactory:
             )
             self._descriptor_lookup[cache_key] = cache_item.add(descriptor)
 
-    def get_call_site(
+    async def get_call_site(
         self, service_identifier: ServiceIdentifier, call_site_chain: CallSiteChain
     ) -> ServiceCallSite | None:
-        return self._create_call_site(
+        return await self._create_call_site(
             service_identifier=service_identifier, call_site_chain=call_site_chain
         )
 
-    def _create_call_site(
+    async def _create_call_site(
         self, service_identifier: ServiceIdentifier, call_site_chain: CallSiteChain
     ) -> ServiceCallSite | None:
-        call_site_lock = self._call_site_locks.get_or_add(
-            service_identifier, lambda _: RLock()
+        async def _create_new_lock(_: ServiceIdentifier) -> asyncio.Lock:
+            return asyncio.Lock()
+
+        call_site_lock = await self._call_site_locks.get_or_add(
+            service_identifier, _create_new_lock
         )
 
-        with call_site_lock:
+        async with call_site_lock:
             return self._try_create_exact_from_service_identifier(
                 service_identifier, call_site_chain
             )

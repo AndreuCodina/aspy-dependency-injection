@@ -50,8 +50,8 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
     def create_scope(self) -> ServiceScope:
         return self._root_provider.create_scope()
 
-    def get_service(self, service_type: type) -> object | None:
-        return self._root_provider.get_service_from_service_identifier(
+    async def get_service(self, service_type: type) -> object | None:
+        return await self._root_provider.get_service_from_service_identifier(
             service_identifier=ServiceIdentifier.from_service_type(service_type),
             service_provider_engine_scope=self,
         )

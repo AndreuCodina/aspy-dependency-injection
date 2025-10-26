@@ -1,22 +1,22 @@
-from threading import RLock
+import asyncio
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
 TKey = TypeVar("TKey")
 TValue = TypeVar("TValue")
 
 
-class ConcurrentDictionary(dict[TKey, TValue]):
+class AsyncConcurrentDictionary(dict[TKey, TValue]):
     """Represents a thread-safe collection of key/value pairs that can be accessed by multiple threads concurrently."""
 
     _dict: dict[TKey, TValue]
-    _lock: RLock
+    _lock: asyncio.Lock
 
     def __init__(self) -> None:
         self._dict: dict[TKey, TValue] = {}
-        self._lock = RLock()
+        self._lock = asyncio.Lock()
 
     def __getitem__(self, key: TKey, /) -> TValue:
         return self._dict[key]
@@ -37,13 +37,13 @@ class ConcurrentDictionary(dict[TKey, TValue]):
     #     with self._lock:
     #         return key in self._dict  # noqa: ERA001
 
-    # https://github.com/microsoft/referencesource/blob/main/mscorlib/system/collections/Concurrent/ConcurrentDictionary.cs#L808
-    def get_or_add(self, key: TKey, value_factory: Callable[[TKey], TValue]) -> TValue:
+    async def get_or_add(
+        self, key: TKey, value_factory: Callable[[TKey], Awaitable[TValue]]
+    ) -> TValue:
         if key not in self._dict:
-            with self._lock:
-                value = value_factory(key)
-
+            async with self._lock:
                 if key not in self._dict:
+                    value = await value_factory(key)
                     self._dict[key] = value
 
         return self._dict[key]

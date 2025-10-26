@@ -3,28 +3,28 @@ from tests.utils.services import ServiceWithDependencies, ServiceWithNoDependenc
 
 
 class TestServiceCollection:
-    def test_resolve_trasient_service(self) -> None:
+    async def test_resolve_trasient_service_with_no_dependencies(self) -> None:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
-        service_scope = services.build_service_provider().create_scope()
 
-        resolved_service = service_scope.service_provider.get_service(
-            ServiceWithNoDependencies
-        )
+        async with services.build_service_provider().create_scope() as service_scope:
+            resolved_service = await service_scope.service_provider.get_service(
+                ServiceWithNoDependencies
+            )
 
-        assert isinstance(resolved_service, ServiceWithNoDependencies)
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
 
-    def test_resolve_transient_service_with_dependencies(self) -> None:
+    async def test_resolve_transient_service_with_dependencies(self) -> None:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
         services.add_transient(ServiceWithDependencies)
-        service_scope = services.build_service_provider().create_scope()
 
-        resolved_service = service_scope.service_provider.get_service(
-            ServiceWithDependencies
-        )
+        async with services.build_service_provider().create_scope() as service_scope:
+            resolved_service = await service_scope.service_provider.get_service(
+                ServiceWithDependencies
+            )
 
-        assert isinstance(resolved_service, ServiceWithDependencies)
-        assert isinstance(
-            resolved_service.service_with_no_dependencies, ServiceWithNoDependencies
-        )
+            assert isinstance(resolved_service, ServiceWithDependencies)
+            assert isinstance(
+                resolved_service.service_with_no_dependencies, ServiceWithNoDependencies
+            )

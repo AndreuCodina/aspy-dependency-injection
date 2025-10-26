@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self, final
 
-from aspy_dependency_injection._concurrent_dictionary import ConcurrentDictionary
+from aspy_dependency_injection._async_concurrent_dictionary import (
+    AsyncConcurrentDictionary,
+)
 from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
 from aspy_dependency_injection.service_identifier import ServiceIdentifier
 from aspy_dependency_injection.service_lookup.call_site_chain import CallSiteChain
@@ -40,7 +42,7 @@ class DefaultServiceProvider(ServiceProvider):
     _services: ServiceCollection
     _root: ServiceProviderEngineScope
     _engine: ServiceProviderEngine
-    _service_accessors: ConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
+    _service_accessors: AsyncConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
 
     def __init__(self, services: ServiceCollection) -> None:
         self._services = services
@@ -48,11 +50,11 @@ class DefaultServiceProvider(ServiceProvider):
             service_provider=self, is_root_scope=True
         )
         self._engine = self._get_engine()
-        self._service_accessors = ConcurrentDictionary()
+        self._service_accessors = AsyncConcurrentDictionary()
         self._call_site_factory = CallSiteFactory(services)
 
-    def get_service(self, service_type: type) -> object | None:
-        return self.get_service_from_service_identifier(
+    async def get_service(self, service_type: type) -> object | None:
+        return await self.get_service_from_service_identifier(
             service_identifier=ServiceIdentifier.from_service_type(service_type),
             service_provider_engine_scope=self._root,
         )
@@ -64,20 +66,20 @@ class DefaultServiceProvider(ServiceProvider):
         #     yield service_scope
         return ServiceProviderEngineScope(service_provider=self, is_root_scope=False)
 
-    def get_service_from_service_identifier(
+    async def get_service_from_service_identifier(
         self,
         service_identifier: ServiceIdentifier,
         service_provider_engine_scope: ServiceProviderEngineScope,
     ) -> object | None:
-        service_accessor = self._service_accessors.get_or_add(
+        service_accessor = await self._service_accessors.get_or_add(
             key=service_identifier, value_factory=self._create_service_accessor
         )
         return service_accessor.realized_service(service_provider_engine_scope)
 
-    def _create_service_accessor(
+    async def _create_service_accessor(
         self, service_identifier: ServiceIdentifier
     ) -> _ServiceAccessor:
-        call_site = self._call_site_factory.get_call_site(
+        call_site = await self._call_site_factory.get_call_site(
             service_identifier, CallSiteChain()
         )
 

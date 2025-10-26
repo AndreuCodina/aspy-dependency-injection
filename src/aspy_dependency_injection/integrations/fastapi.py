@@ -97,7 +97,7 @@ def inject_from_container(target: Callable[..., Any]) -> Callable[..., Any]:
     async def _inject_async_target(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         parameters_to_inject = get_parameters_to_inject(target)
         parameters_to_inject_resolved: dict[str, Any] = {
-            injected_parameter_name: get_request_container().get_service(
+            injected_parameter_name: await get_request_container().get_service(
                 injected_parameter_class
             )
             for injected_parameter_name, injected_parameter_class in parameters_to_inject.items()
