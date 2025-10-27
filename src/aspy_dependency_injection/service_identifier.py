@@ -1,11 +1,12 @@
-from typing import TYPE_CHECKING, Final, final
+from collections.abc import Hashable
+from typing import TYPE_CHECKING, Final, final, override
 
 if TYPE_CHECKING:
     from aspy_dependency_injection.service_descriptor import ServiceDescriptor
 
 
 @final
-class ServiceIdentifier:
+class ServiceIdentifier(Hashable):
     """Internal registered service during resolution."""
 
     service_type: Final[type]
@@ -29,5 +30,6 @@ class ServiceIdentifier:
 
         return self.service_type == value.service_type
 
+    @override
     def __hash__(self) -> int:
         return hash(self.service_type)
