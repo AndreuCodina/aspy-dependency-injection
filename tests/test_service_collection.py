@@ -3,7 +3,7 @@ from tests.utils.services import ServiceWithDependencies, ServiceWithNoDependenc
 
 
 class TestServiceCollection:
-    async def test_resolve_trasient_service_with_no_dependencies(self) -> None:
+    async def test_resolve_transient_service_with_no_dependencies(self) -> None:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
 
