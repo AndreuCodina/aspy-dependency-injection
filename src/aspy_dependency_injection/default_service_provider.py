@@ -95,9 +95,11 @@ class DefaultServiceProvider(ServiceProvider):
     def _get_engine(self) -> ServiceProviderEngine:
         return RuntimeServiceProviderEngine.INSTANCE
 
+    @override
     async def __aenter__(self) -> Self:
         return self
 
+    @override
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,

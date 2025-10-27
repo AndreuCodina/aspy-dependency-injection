@@ -37,9 +37,11 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
     def service_provider(self) -> ServiceProvider:
         return self._root_provider
 
+    @override
     async def __aenter__(self) -> Self:
         return self
 
+    @override
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,
