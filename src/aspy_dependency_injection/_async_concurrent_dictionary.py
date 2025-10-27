@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -8,8 +8,8 @@ if TYPE_CHECKING:
 class AsyncConcurrentDictionary[TKey, TValue](dict[TKey, TValue]):
     """Represents a thread-safe collection of key/value pairs that can be accessed by multiple threads concurrently."""
 
-    _dict: dict[TKey, TValue]
-    _lock: asyncio.Lock
+    _dict: Final[dict[TKey, TValue]]
+    _lock: Final[asyncio.Lock]
 
     def __init__(self) -> None:
         self._dict: dict[TKey, TValue] = {}

@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, ClassVar, final
+from typing import TYPE_CHECKING, ClassVar, Final, final
 
 from aspy_dependency_injection._async_concurrent_dictionary import (
     AsyncConcurrentDictionary,
@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 class CallSiteFactory:
     _DEFAULT_SLOT: ClassVar[int] = 0
 
-    _call_site_locks: AsyncConcurrentDictionary[ServiceIdentifier, asyncio.Lock]
-    _descriptor_lookup: dict[ServiceIdentifier, _ServiceDescriptorCacheItem]
-    _descriptors: list[ServiceDescriptor]
+    _call_site_locks: Final[AsyncConcurrentDictionary[ServiceIdentifier, asyncio.Lock]]
+    _descriptor_lookup: Final[dict[ServiceIdentifier, _ServiceDescriptorCacheItem]]
+    _descriptors: Final[list[ServiceDescriptor]]
 
     def __init__(self, services: ServiceCollection) -> None:
         self._call_site_locks = AsyncConcurrentDictionary[

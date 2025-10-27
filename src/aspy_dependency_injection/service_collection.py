@@ -1,3 +1,5 @@
+from typing import Final
+
 from aspy_dependency_injection.default_service_provider import (
     DefaultServiceProvider,
 )
@@ -8,7 +10,7 @@ from aspy_dependency_injection.service_lifetime import ServiceLifetime
 class ServiceCollection:
     """Collection of service descriptors provided during configuration."""
 
-    descriptors: list[ServiceDescriptor]
+    descriptors: Final[list[ServiceDescriptor]]
 
     def __init__(self) -> None:
         self.descriptors = []

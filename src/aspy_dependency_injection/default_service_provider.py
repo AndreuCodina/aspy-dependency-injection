@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self, final, override
+from typing import TYPE_CHECKING, Final, Self, final, override
 
 from aspy_dependency_injection._async_concurrent_dictionary import (
     AsyncConcurrentDictionary,
@@ -39,10 +39,12 @@ class _ServiceAccessor:
 class DefaultServiceProvider(ServiceProvider):
     """Provider that resolves services."""
 
-    _services: ServiceCollection
-    _root: ServiceProviderEngineScope
-    _engine: ServiceProviderEngine
-    _service_accessors: AsyncConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
+    _services: Final[ServiceCollection]
+    _root: Final[ServiceProviderEngineScope]
+    _engine: Final[ServiceProviderEngine]
+    _service_accessors: Final[
+        AsyncConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
+    ]
 
     def __init__(self, services: ServiceCollection) -> None:
         self._services = services
