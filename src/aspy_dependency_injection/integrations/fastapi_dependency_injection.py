@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi.routing import APIRoute
 from starlette.requests import Request
+from starlette.routing import Match
 from starlette.websockets import WebSocket
 
 from aspy_dependency_injection.injectable_type import InjectableType
@@ -66,6 +67,7 @@ class FastApiDependencyInjection:
             if not (
                 isinstance(route, APIRoute)
                 and route.dependant.call is not None
+                and inspect.iscoroutinefunction(route.dependant.call)
                 and not self._are_annotated_parameters_with_aspy_dependencies(
                     route.dependant.call
                 )
@@ -146,6 +148,23 @@ class _AspyAsgiMiddleware:
 
         token = current_request.set(request)
         try:
+            is_async_endpoint = False
+
+            for route in scope["app"].routes:
+                if (
+                    isinstance(route, APIRoute)
+                    and route.matches(scope)[0] == Match.FULL
+                ):
+                    original = inspect.unwrap(route.dependant.call)  # pyright: ignore[reportArgumentType]
+                    is_async_endpoint = inspect.iscoroutinefunction(original)
+
+                    if is_async_endpoint:
+                        break
+
+            if not is_async_endpoint:
+                await self.app(scope, receive, send)
+                return None
+
             service_provider: DefaultServiceProvider = (
                 request.app.state.aspy_service_provider
             )

@@ -35,6 +35,11 @@ def app() -> FastAPI:
     ) -> None:
         assert isinstance(service_with_no_dependencies, ServiceWithNoDependencies)
 
+    @router.get("/sync-endpoint")
+    async def sync_endpoint(  # pyright: ignore[reportUnusedFunction]
+    ) -> None:
+        pass
+
     app.include_router(router)
     services = ServiceCollection()
     services.add_transient(ServiceWithNoDependencies)
@@ -51,5 +56,10 @@ def test_client(app: FastAPI) -> Generator[TestClient]:
 class TestFastApi:
     def test_inject_service(self, test_client: TestClient) -> None:
         response = test_client.get("/service-with-no-dependencies")
+
+        assert response.status_code == HTTPStatus.OK
+
+    def test_work_with_sync_endpoints(self, test_client: TestClient) -> None:
+        response = test_client.get("/sync-endpoint")
 
         assert response.status_code == HTTPStatus.OK
