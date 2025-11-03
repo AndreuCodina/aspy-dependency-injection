@@ -1,5 +1,8 @@
 from aspy_dependency_injection.service_collection import ServiceCollection
-from tests.utils.services import ServiceWithDependencies, ServiceWithNoDependencies
+from tests.utils.services import (
+    ServiceWithDependencies,
+    ServiceWithNoDependencies,
+)
 
 
 class TestServiceCollection:
