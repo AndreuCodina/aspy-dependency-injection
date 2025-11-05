@@ -1,6 +1,6 @@
 from fastapi import Depends
 
-from aspy_dependency_injection.injectable_type import Injectable
+from aspy_dependency_injection.injectable import Injectable
 
 
 def Inject() -> Injectable:  # noqa: N802

@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.routing import Match
 from starlette.websockets import WebSocket
 
-from aspy_dependency_injection.injectable_type import Injectable
+from aspy_dependency_injection.injectable import Injectable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Sequence
