@@ -1,12 +1,12 @@
 from fastapi import Depends
 
-from aspy_dependency_injection.injectable_type import InjectableType
+from aspy_dependency_injection.injectable_type import Injectable
 
 
-def Inject() -> InjectableType:  # noqa: N802
+def Inject() -> Injectable:  # noqa: N802
     """Inject Depends for FastAPI integration."""
 
-    def _dependency() -> InjectableType:
-        return InjectableType()
+    def _dependency() -> Injectable:
+        return Injectable()
 
     return Depends(_dependency, use_cache=False)

@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.routing import Match
 from starlette.websockets import WebSocket
 
-from aspy_dependency_injection.injectable_type import InjectableType
+from aspy_dependency_injection.injectable_type import Injectable
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Sequence
@@ -57,7 +57,7 @@ class FastApiDependencyInjection:
     ) -> bool:
         for parameter in inspect.signature(target).parameters.values():
             if parameter.annotation is not None and isinstance(
-                parameter.annotation, InjectableType
+                parameter.annotation, Injectable
             ):
                 return True
 
@@ -121,14 +121,12 @@ class FastApiDependencyInjection:
 
         return result
 
-    def _get_injectable_dependency(
-        self, metadata: Sequence[Any]
-    ) -> InjectableType | None:
+    def _get_injectable_dependency(self, metadata: Sequence[Any]) -> Injectable | None:
         for metadata_item in metadata:
             if hasattr(metadata_item, "dependency"):
                 dependency = metadata_item.dependency()  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
 
-                if isinstance(dependency, InjectableType):
+                if isinstance(dependency, Injectable):
                     return dependency
 
         return None

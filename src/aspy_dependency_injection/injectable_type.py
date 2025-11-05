@@ -2,5 +2,5 @@ from typing import final
 
 
 @final
-class InjectableType:
+class Injectable:
     pass
