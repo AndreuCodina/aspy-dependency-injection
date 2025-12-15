@@ -1,9 +1,14 @@
 import asyncio
-from contextlib import AbstractAsyncContextManager, AbstractContextManager
-from typing import TYPE_CHECKING, Final, Never, Self, final, override
+from typing import TYPE_CHECKING, Final, Self, final, override
 
 from aspy_dependency_injection._service_lookup._service_identifier import (
     ServiceIdentifier,
+)
+from aspy_dependency_injection._service_lookup._supports_async_context_manager import (
+    SupportsAsyncContextManager,
+)
+from aspy_dependency_injection._service_lookup._supports_context_manager import (
+    SupportsContextManager,
 )
 from aspy_dependency_injection.abstractions.service_provider import (
     ServiceProvider,
@@ -66,8 +71,7 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
 
     async def capture_disposable(self, service: object | None) -> object | None:
         if service is self or not (
-            hasattr(service, AbstractAsyncContextManager[Never].__aexit__.__name__)
-            or hasattr(service, AbstractContextManager[Never].__exit__.__name__)
+            isinstance(service, (SupportsAsyncContextManager, SupportsContextManager))
         ):
             return service
 
@@ -84,13 +88,10 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
 
         # Don't run customer code under the lock
         if is_disposed:
-            if service is not None:
-                if hasattr(
-                    service, AbstractAsyncContextManager[Never].__aexit__.__name__
-                ):
-                    await service.__aexit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-                elif hasattr(service, AbstractContextManager[Never].__exit__.__name__):
-                    service.__exit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+            if isinstance(service, SupportsAsyncContextManager):
+                await service.__aexit__(None, None, None)
+            else:
+                service.__exit__(None, None, None)
 
             raise ObjectDisposedError(ServiceProvider.__name__)
 
@@ -134,11 +135,9 @@ class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
             return None
 
         for i in range(len(to_dispose) - 1, -1, -1):
-            if hasattr(
-                to_dispose[i], AbstractAsyncContextManager[Never].__aexit__.__name__
-            ):
-                await to_dispose[i].__aexit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-            elif hasattr(
-                to_dispose[i], AbstractContextManager[Never].__exit__.__name__
-            ):
-                to_dispose[i].__exit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+            service = to_dispose[i]
+
+            if isinstance(service, SupportsAsyncContextManager):
+                await service.__aexit__(None, None, None)
+            elif isinstance(service, SupportsContextManager):
+                service.__exit__(None, None, None)

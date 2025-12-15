@@ -6,13 +6,13 @@ if TYPE_CHECKING:
 
 
 class AsyncConcurrentDictionary[TKey, TValue](dict[TKey, TValue]):
-    """Represents a thread-safe collection of key/value pairs that can be accessed by multiple threads concurrently."""
+    """Thread-safe collection of key/value pairs that can be accessed by multiple threads concurrently."""
 
     _dict: Final[dict[TKey, TValue]]
     _lock: Final[asyncio.Lock]
 
     def __init__(self) -> None:
-        self._dict: dict[TKey, TValue] = {}
+        self._dict = {}
         self._lock = asyncio.Lock()
 
     def __getitem__(self, key: TKey, /) -> TValue:

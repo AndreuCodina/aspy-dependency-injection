@@ -8,14 +8,14 @@ if TYPE_CHECKING:
 
 @final
 class CallSiteChain:
-    _call_site_chain: Final[dict[ServiceIdentifier, ChainItemInformation]]
+    _call_site_chain: Final[dict[ServiceIdentifier, _ChainItemInformation]]
 
     def __init__(self) -> None:
         self._call_site_chain = {}
 
 
 @final
-class ChainItemInformation:
+class _ChainItemInformation:
     _order: Final[int]
     _implementation_type: Final[type | None]
 

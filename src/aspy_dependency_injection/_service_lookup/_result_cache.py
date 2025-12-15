@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 @final
 class ResultCache:
+    """Track cached service."""
+
     _location: Final[CallSiteResultCacheLocation]
     _key: Final[ServiceCacheKey]
 

@@ -6,6 +6,8 @@ if TYPE_CHECKING:
 
 
 class ServiceCallSite(ABC):
+    """Representation of how a service must be created."""
+
     @property
     @abstractmethod
     def cache(self) -> ResultCache: ...

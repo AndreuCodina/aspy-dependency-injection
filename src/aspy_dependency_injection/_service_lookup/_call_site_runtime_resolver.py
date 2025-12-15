@@ -1,8 +1,13 @@
-from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Never, final, override
+from typing import TYPE_CHECKING, ClassVar, final, override
 
 from aspy_dependency_injection._service_lookup._call_site_visitor import CallSiteVisitor
+from aspy_dependency_injection._service_lookup._supports_async_context_manager import (
+    SupportsAsyncContextManager,
+)
+from aspy_dependency_injection._service_lookup._supports_context_manager import (
+    SupportsContextManager,
+)
 
 if TYPE_CHECKING:
     from aspy_dependency_injection._service_lookup._constructor_call_site import (
@@ -16,7 +21,7 @@ if TYPE_CHECKING:
     )
 
 
-@dataclass
+@dataclass(frozen=True)
 class RuntimeResolverContext:
     scope: ServiceProviderEngineScope
 
@@ -45,10 +50,10 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         service = constructor_call_site.constructor_information.invoke(parameter_values)
 
         if service is not self:
-            if hasattr(service, AbstractAsyncContextManager[Never].__aexit__.__name__):
-                await service.__aexit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-            elif hasattr(service, AbstractContextManager[Never].__exit__.__name__):
-                await service.__exit__(None, None, None)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+            if isinstance(service, SupportsAsyncContextManager):
+                await service.__aenter__()
+            elif isinstance(service, SupportsContextManager):
+                service.__enter__()
 
         return service
 

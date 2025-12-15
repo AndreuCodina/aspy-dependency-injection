@@ -1,5 +1,5 @@
-from contextlib import AbstractAsyncContextManager
-from typing import TYPE_CHECKING, override
+from contextlib import AbstractAsyncContextManager, AbstractContextManager
+from typing import TYPE_CHECKING, Self, override
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -14,9 +14,37 @@ class ServiceWithDependencies:
         self.service_with_no_dependencies = service_with_no_dependencies
 
 
+class DisposeViewer:
+    def __init__(self) -> None:
+        self.is_disposed = False
+        self._is_disposed_initialized = False
+
+    def _enter_context(self) -> None:
+        self._is_disposed_initialized = True
+
+    def _exit_context(self) -> None:
+        if not self._is_disposed_initialized:
+            error_message = (
+                "__aenter__/__enter__ was not called before __aexit__/__exit__."
+            )
+            raise RuntimeError(error_message)
+
+        self.is_disposed = True
+
+
 class ServiceWithAsyncContextManagerAndNoDependencies(
-    AbstractAsyncContextManager["ServiceWithAsyncContextManagerAndNoDependencies"]
+    DisposeViewer,
+    AbstractAsyncContextManager["ServiceWithAsyncContextManagerAndNoDependencies"],
 ):
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def __aenter__(
+        self,
+    ) -> Self:
+        self._enter_context()
+        return self
+
     @override
     async def __aexit__(
         self,
@@ -24,4 +52,56 @@ class ServiceWithAsyncContextManagerAndNoDependencies(
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> bool | None:
+        self._exit_context()
+        return None
+
+
+class ServiceWithAsyncContextManagerAndDependencies(
+    DisposeViewer,
+    AbstractAsyncContextManager["ServiceWithAsyncContextManagerAndDependencies"],
+):
+    def __init__(
+        self,
+        service_with_async_context_manager_and_no_dependencies: ServiceWithAsyncContextManagerAndNoDependencies,
+    ) -> None:
+        self.service_with_async_context_manager_and_no_dependencies = (
+            service_with_async_context_manager_and_no_dependencies
+        )
+        super().__init__()
+
+    async def __aenter__(
+        self,
+    ) -> Self:
+        self._enter_context()
+        return self
+
+    @override
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
+        self._exit_context()
+        return None
+
+
+class ServiceWithSyncContextManagerAndNoDependencies(
+    DisposeViewer,
+    AbstractContextManager["ServiceWithSyncContextManagerAndNoDependencies"],
+):
+    def __enter__(
+        self,
+    ) -> Self:
+        self._enter_context()
+        return self
+
+    @override
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
+        self._exit_context()
         return None
