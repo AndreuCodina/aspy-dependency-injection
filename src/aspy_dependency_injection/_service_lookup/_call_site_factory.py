@@ -17,6 +17,9 @@ from aspy_dependency_injection._service_lookup._service_call_site import (
 from aspy_dependency_injection._service_lookup._service_identifier import (
     ServiceIdentifier,
 )
+from aspy_dependency_injection._service_lookup._sync_factory_call_site import (
+    SyncFactoryCallSite,
+)
 from aspy_dependency_injection._service_lookup.service_cache_key import ServiceCacheKey
 
 if TYPE_CHECKING:
@@ -149,7 +152,14 @@ class CallSiteFactory:
 
         cache = ResultCache(service_descriptor.lifetime, service_identifier, slot)
 
-        if service_descriptor.has_implementation_type():
+        if service_descriptor.sync_implementation_factory is not None:
+            assert service_descriptor.sync_implementation_factory is not None
+            service_call_site = SyncFactoryCallSite(
+                cache=cache,
+                service_type=service_identifier.service_type,
+                implementation_factory=service_descriptor.sync_implementation_factory,
+            )
+        elif service_descriptor.has_implementation_type():
             assert service_descriptor.implementation_type is not None
             service_call_site = await self._create_constructor_call_site(
                 cache=cache,

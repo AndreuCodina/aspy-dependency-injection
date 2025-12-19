@@ -14,6 +14,9 @@ from aspy_dependency_injection._service_lookup._service_identifier import (
     ServiceIdentifier,
 )
 from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
+from aspy_dependency_injection.abstractions.service_scope import (
+    AbstractAsyncContextManager,
+)
 from aspy_dependency_injection.service_provider_engine_scope import (
     ServiceProviderEngineScope,
 )
@@ -39,7 +42,9 @@ class ServiceAccessor:
 
 
 @final
-class DefaultServiceProvider(ServiceProvider):
+class DefaultServiceProvider(
+    ServiceProvider, AbstractAsyncContextManager["DefaultServiceProvider"]
+):
     """Provider that resolves services."""
 
     _services: Final[ServiceCollection]

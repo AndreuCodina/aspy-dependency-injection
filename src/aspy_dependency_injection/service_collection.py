@@ -1,10 +1,16 @@
-from typing import Final
+import asyncio
+from typing import TYPE_CHECKING, Final, overload
 
 from aspy_dependency_injection.default_service_provider import (
     DefaultServiceProvider,
 )
 from aspy_dependency_injection.service_descriptor import ServiceDescriptor
 from aspy_dependency_injection.service_lifetime import ServiceLifetime
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
 
 
 class ServiceCollection:
@@ -19,17 +25,53 @@ class ServiceCollection:
     def descriptors(self) -> list[ServiceDescriptor]:
         return self._descriptors
 
-    def add_transient(self, service_type: type) -> None:
-        self._add_from_implentation_type(
-            service_type=service_type,
-            implementation_type=service_type,
-            lifetime=ServiceLifetime.TRANSIENT,
-        )
+    @overload
+    def add_transient[TService](self, service_type: type[TService]) -> None: ...
 
-    def add_singleton(self, service: type) -> None:
+    @overload
+    def add_transient[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[ServiceProvider], Awaitable[TService]],
+    ) -> None: ...
+
+    @overload
+    def add_transient[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[ServiceProvider], TService],
+    ) -> None: ...
+
+    def add_transient[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[ServiceProvider], Awaitable[TService]]
+        | Callable[[ServiceProvider], TService]
+        | None = None,
+    ) -> None:
+        if implementation_factory is None:
+            self._add_from_implentation_type(
+                service_type=service_type,
+                implementation_type=service_type,
+                lifetime=ServiceLifetime.TRANSIENT,
+            )
+        elif asyncio.iscoroutinefunction(implementation_factory):
+            self._add_from_async_implementation_factory(
+                service_type=service_type,
+                implementation_factory=implementation_factory,
+                lifetime=ServiceLifetime.TRANSIENT,
+            )
+        else:
+            self._add_from_sync_implementation_factory(
+                service_type=service_type,
+                implementation_factory=implementation_factory,
+                lifetime=ServiceLifetime.TRANSIENT,
+            )
+
+    def add_singleton(self, service_type: type) -> None:
         pass
 
-    def add_scoped(self, service: type) -> None:
+    def add_scoped(self, service_type: type) -> None:
         pass
 
     def build_service_provider(self) -> DefaultServiceProvider:
@@ -42,6 +84,32 @@ class ServiceCollection:
         descriptor = ServiceDescriptor.from_implementation_type(
             service_type=service_type,
             implementation_type=implementation_type,
+            lifetime=lifetime,
+        )
+        self._descriptors.append(descriptor)
+
+    def _add_from_sync_implementation_factory(
+        self,
+        service_type: type,
+        implementation_factory: Callable[[ServiceProvider], object],
+        lifetime: ServiceLifetime,
+    ) -> None:
+        descriptor = ServiceDescriptor.from_sync_implementation_factory(
+            service_type=service_type,
+            implementation_factory=implementation_factory,
+            lifetime=lifetime,
+        )
+        self._descriptors.append(descriptor)
+
+    def _add_from_async_implementation_factory(
+        self,
+        service_type: type,
+        implementation_factory: Callable[[ServiceProvider], Awaitable[object]],
+        lifetime: ServiceLifetime,
+    ) -> None:
+        descriptor = ServiceDescriptor.from_async_implementation_factory(
+            service_type=service_type,
+            implementation_factory=implementation_factory,
             lifetime=lifetime,
         )
         self._descriptors.append(descriptor)

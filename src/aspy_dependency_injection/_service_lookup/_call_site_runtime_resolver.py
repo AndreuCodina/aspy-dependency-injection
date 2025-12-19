@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from aspy_dependency_injection._service_lookup._service_call_site import (
         ServiceCallSite,
     )
+    from aspy_dependency_injection._service_lookup._sync_factory_call_site import (
+        SyncFactoryCallSite,
+    )
     from aspy_dependency_injection.service_provider_engine_scope import (
         ServiceProviderEngineScope,
     )
@@ -63,6 +66,14 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
     ) -> object | None:
         service = await self._visit_call_site_main(call_site, argument)
         return await argument.scope.capture_disposable(service)
+
+    @override
+    def _visit_sync_factory(
+        self,
+        sync_factory_call_site: SyncFactoryCallSite,
+        argument: RuntimeResolverContext,
+    ) -> object | None:
+        return sync_factory_call_site.implementation_factory(argument.scope)
 
 
 CallSiteRuntimeResolver.INSTANCE = CallSiteRuntimeResolver()

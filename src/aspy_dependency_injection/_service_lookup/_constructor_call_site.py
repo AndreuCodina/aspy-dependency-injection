@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Final, final, override
 
+from aspy_dependency_injection._service_lookup._call_site_kind import CallSiteKind
 from aspy_dependency_injection._service_lookup._result_cache import ResultCache
 from aspy_dependency_injection._service_lookup._service_call_site import ServiceCallSite
 
@@ -37,6 +38,11 @@ class ConstructorCallSite(ServiceCallSite):
     @override
     def service_type(self) -> type:
         return self._service_type
+
+    @property
+    @override
+    def kind(self) -> CallSiteKind:
+        return CallSiteKind.CONSTRUCTOR
 
     @property
     def constructor_information(self) -> ConstructorInformation:

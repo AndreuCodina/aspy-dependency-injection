@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @final
-class ServiceProviderEngineScope(ServiceScope, ServiceScopeFactory):
+class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFactory):
     """Container resolving services with scope."""
 
     _root_provider: Final[DefaultServiceProvider]

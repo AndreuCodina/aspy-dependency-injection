@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pytest
 
 from aspy_dependency_injection.service_collection import ServiceCollection
@@ -11,11 +13,43 @@ from tests.utils.services import (
     ServiceWithSyncContextManagerAndNoDependencies,
 )
 
+if TYPE_CHECKING:
+    from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
+
+
+class Father:
+    pass
+
+
+class Child(Father):
+    pass
+
 
 class TestServiceCollection:
     async def test_resolve_transient_service_with_no_dependencies(self) -> None:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
+
+        async with (
+            services.build_service_provider() as service_provider,
+            service_provider.create_scope() as service_scope,
+        ):
+            resolved_service = await service_scope.service_provider.get_service(
+                ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_resolve_transient_service_with_sync_implementation_factory_and_no_dependencies(
+        self,
+    ) -> None:
+        def sync_implementation_factory(
+            _: ServiceProvider,
+        ) -> ServiceWithNoDependencies:
+            return ServiceWithNoDependencies()
+
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies, sync_implementation_factory)
 
         async with (
             services.build_service_provider() as service_provider,
