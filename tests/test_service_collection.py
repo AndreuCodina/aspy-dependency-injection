@@ -182,5 +182,10 @@ class TestServiceCollection:
             services.build_service_provider() as service_provider,
             service_provider.create_scope() as service_scope,
         ):
+            resolved_service = await service_scope.service_provider.get_service(
+                ServiceWithNoDependencies
+            )
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
             await service_scope.service_provider.get_service(ServiceWithNoDependencies)
-            await service_scope.service_provider.get_service(ServiceWithNoDependencies)
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
