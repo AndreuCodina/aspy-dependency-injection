@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from aspy_dependency_injection._async_concurrent_dictionary import (
     AsyncConcurrentDictionary,
 )
@@ -34,3 +36,18 @@ class TestConcurrentDictionary:
         await asyncio.gather(*tasks)
 
         assert _run_count == expected_value_factory_executions
+
+    async def test_lock_is_not_reentrant_and_can_block(self) -> None:
+        dictionary = AsyncConcurrentDictionary[str, str]()
+
+        async def reentrant_value_factory(_: str) -> str:
+            # Attempt to acquire the same dictionary lock from within a locked section
+            # This should block because asyncio.Lock is not re-entrant
+            await dictionary.upsert("inner-key", "value")
+            return "outer-value"
+
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(
+                dictionary.get_or_add("outer-key", reentrant_value_factory),
+                timeout=1.0,
+            )

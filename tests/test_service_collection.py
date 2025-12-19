@@ -104,6 +104,7 @@ class TestServiceCollection:
         assert resolved_service.service_with_async_context_manager_and_no_dependencies.is_disposed
 
     async def test_fail_when_resolve_circular_dependency(self) -> None:
+        expected_error_message = "A circular dependency was detected for the service of type '<class 'tests.utils.services.SelfCircularDependencyService'>'"
         services = ServiceCollection()
         services.add_transient(SelfCircularDependencyService)
 
@@ -111,9 +112,18 @@ class TestServiceCollection:
             services.build_service_provider() as service_provider,
             service_provider.create_scope() as service_scope,
         ):
-            with pytest.raises(RuntimeError) as error:
+            with pytest.raises(RuntimeError, match=expected_error_message):
                 await service_scope.service_provider.get_service(
                     SelfCircularDependencyService
                 )
-                foo = str(error)
-                assert foo != ""
+
+    async def test_resolve_same_transient_service_several_times(self) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with (
+            services.build_service_provider() as service_provider,
+            service_provider.create_scope() as service_scope,
+        ):
+            await service_scope.service_provider.get_service(ServiceWithNoDependencies)
+            await service_scope.service_provider.get_service(ServiceWithNoDependencies)
