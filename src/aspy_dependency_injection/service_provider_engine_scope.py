@@ -61,7 +61,10 @@ class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFact
         return self._root_provider.create_scope()
 
     @override
-    async def get_service(self, service_type: type) -> object | None:
+    async def get_service_object(self, service_type: type) -> object | None:
+        if self._is_disposed:
+            raise ObjectDisposedError
+
         return await self._root_provider.get_service_from_service_identifier(
             service_identifier=ServiceIdentifier.from_service_type(service_type),
             service_provider_engine_scope=self,
@@ -91,7 +94,7 @@ class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFact
             else:
                 service.__exit__(None, None, None)
 
-            raise ObjectDisposedError(ServiceProvider.__name__)
+            raise ObjectDisposedError
 
         return service
 

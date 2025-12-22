@@ -30,11 +30,22 @@ class TestServiceCollection:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
 
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_resolve_transient_service_using_scope(self) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
         async with (
             services.build_service_provider() as service_provider,
             service_provider.create_scope() as service_scope,
         ):
-            resolved_service = await service_scope.service_provider.get_service(
+            resolved_service = await service_scope.service_provider.get_service_object(
                 ServiceWithNoDependencies
             )
 
@@ -74,11 +85,8 @@ class TestServiceCollection:
         )
         services.add_transient(ServiceWithNoDependencies, implementation_factory)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
-            resolved_service = await service_scope.service_provider.get_service(
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
                 ServiceWithNoDependencies
             )
 
@@ -89,11 +97,8 @@ class TestServiceCollection:
         services.add_transient(ServiceWithNoDependencies)
         services.add_transient(ServiceWithDependencies)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
-            resolved_service = await service_scope.service_provider.get_service(
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
                 ServiceWithDependencies
             )
 
@@ -119,13 +124,8 @@ class TestServiceCollection:
         services = ServiceCollection()
         services.add_transient(service_type)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
-            resolved_service = await service_scope.service_provider.get_service(
-                service_type
-            )
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(service_type)
 
             assert isinstance(resolved_service, service_type)
             assert not resolved_service.is_disposed
@@ -139,11 +139,8 @@ class TestServiceCollection:
         services.add_transient(ServiceWithAsyncContextManagerAndNoDependencies)
         services.add_transient(ServiceWithAsyncContextManagerAndDependencies)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
-            resolved_service = await service_scope.service_provider.get_service(
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
                 ServiceWithAsyncContextManagerAndDependencies
             )
 
@@ -165,12 +162,9 @@ class TestServiceCollection:
         services = ServiceCollection()
         services.add_transient(SelfCircularDependencyService)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
+        async with services.build_service_provider() as service_provider:
             with pytest.raises(RuntimeError, match=expected_error_message):
-                await service_scope.service_provider.get_service(
+                await service_provider.get_required_service(
                     SelfCircularDependencyService
                 )
 
@@ -178,14 +172,23 @@ class TestServiceCollection:
         services = ServiceCollection()
         services.add_transient(ServiceWithNoDependencies)
 
-        async with (
-            services.build_service_provider() as service_provider,
-            service_provider.create_scope() as service_scope,
-        ):
-            resolved_service = await service_scope.service_provider.get_service(
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
                 ServiceWithNoDependencies
             )
             assert isinstance(resolved_service, ServiceWithNoDependencies)
 
-            await service_scope.service_provider.get_service(ServiceWithNoDependencies)
+            await service_provider.get_required_service(ServiceWithNoDependencies)
             assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_get_service_returns_none_when_the_required_service_is_not_provided(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_service(
+                ServiceWithNoDependencies
+            )
+
+            assert resolved_service is None

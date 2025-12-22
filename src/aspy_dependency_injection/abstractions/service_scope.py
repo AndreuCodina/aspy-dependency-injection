@@ -19,6 +19,3 @@ class ServiceScope(AbstractAsyncContextManager["ServiceScope"], ABC):
     @abstractmethod
     def service_provider(self) -> ServiceProvider:
         """Gets the ServiceProvider used to resolve dependencies from the scope."""
-
-    @abstractmethod
-    async def get_service(self, service_type: type) -> object | None: ...

@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class ServiceAccessor:
+class _ServiceAccessor:
     call_site: ServiceCallSite | None
     realized_service: Callable[[ServiceProviderEngineScope], Awaitable[object | None]]
 
@@ -51,7 +51,7 @@ class DefaultServiceProvider(
     _root: Final[ServiceProviderEngineScope]
     _engine: Final[ServiceProviderEngine]
     _service_accessors: Final[
-        AsyncConcurrentDictionary[ServiceIdentifier, ServiceAccessor]
+        AsyncConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
     ]
     _is_disposed: bool
 
@@ -70,7 +70,7 @@ class DefaultServiceProvider(
         return self._is_disposed
 
     @override
-    async def get_service(self, service_type: type) -> object | None:
+    async def get_service_object(self, service_type: type) -> object | None:
         return await self.get_service_from_service_identifier(
             service_identifier=ServiceIdentifier.from_service_type(service_type),
             service_provider_engine_scope=self._root,
@@ -92,7 +92,7 @@ class DefaultServiceProvider(
 
     async def _create_service_accessor(
         self, service_identifier: ServiceIdentifier
-    ) -> ServiceAccessor:
+    ) -> _ServiceAccessor:
         def realized_service_returning_none(
             _: ServiceProviderEngineScope,
         ) -> Awaitable[object | None]:
@@ -106,11 +106,11 @@ class DefaultServiceProvider(
 
         if call_site is not None:
             realized_service = self._engine.realize_service(call_site)
-            return ServiceAccessor(
+            return _ServiceAccessor(
                 call_site=call_site, realized_service=realized_service
             )
 
-        return ServiceAccessor(
+        return _ServiceAccessor(
             call_site=call_site, realized_service=realized_service_returning_none
         )
 
