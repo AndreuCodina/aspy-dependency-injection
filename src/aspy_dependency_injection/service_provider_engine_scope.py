@@ -10,8 +10,8 @@ from aspy_dependency_injection._service_lookup._supports_async_context_manager i
 from aspy_dependency_injection._service_lookup._supports_context_manager import (
     SupportsContextManager,
 )
-from aspy_dependency_injection.abstractions.service_provider import (
-    ServiceProvider,
+from aspy_dependency_injection.abstractions.base_service_provider import (
+    BaseServiceProvider,
 )
 from aspy_dependency_injection.abstractions.service_scope import ServiceScope
 from aspy_dependency_injection.abstractions.service_scope_factory import (
@@ -22,16 +22,18 @@ from aspy_dependency_injection.exceptions import ObjectDisposedError
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from aspy_dependency_injection.default_service_provider import (
-        DefaultServiceProvider,
+    from aspy_dependency_injection.service_provider import (
+        ServiceProvider,
     )
 
 
 @final
-class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFactory):
+class ServiceProviderEngineScope(
+    ServiceScope, BaseServiceProvider, ServiceScopeFactory
+):
     """Container resolving services with scope."""
 
-    _root_provider: Final[DefaultServiceProvider]
+    _root_provider: Final[ServiceProvider]
     _is_root_scope: Final[bool]
     _is_disposed: bool
 
@@ -42,9 +44,7 @@ class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFact
 
     _disposables: list[object] | None
 
-    def __init__(
-        self, service_provider: DefaultServiceProvider, is_root_scope: bool
-    ) -> None:
+    def __init__(self, service_provider: ServiceProvider, is_root_scope: bool) -> None:
         self._root_provider = service_provider
         self._is_root_scope = is_root_scope
         self._is_disposed = False
@@ -53,7 +53,7 @@ class ServiceProviderEngineScope(ServiceScope, ServiceProvider, ServiceScopeFact
 
     @property
     @override
-    def service_provider(self) -> ServiceProvider:
+    def service_provider(self) -> BaseServiceProvider:
         return self._root_provider
 
     @override

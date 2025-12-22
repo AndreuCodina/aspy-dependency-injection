@@ -14,7 +14,9 @@ from tests.utils.services import (
 )
 
 if TYPE_CHECKING:
-    from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
+    from aspy_dependency_injection.abstractions.base_service_provider import (
+        BaseServiceProvider,
+    )
 
 
 class Father:
@@ -67,12 +69,12 @@ class TestServiceCollection:
         is_async_implementation_factory: bool,
     ) -> None:
         async def async_implementation_factory(
-            _: ServiceProvider,
+            _: BaseServiceProvider,
         ) -> ServiceWithNoDependencies:
             return ServiceWithNoDependencies()
 
         def sync_implementation_factory(
-            _: ServiceProvider,
+            _: BaseServiceProvider,
         ) -> ServiceWithNoDependencies:
             return ServiceWithNoDependencies()
 

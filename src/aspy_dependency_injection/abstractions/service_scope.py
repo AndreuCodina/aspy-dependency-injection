@@ -3,8 +3,8 @@ from contextlib import AbstractAsyncContextManager
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from aspy_dependency_injection.abstractions.service_provider import (
-        ServiceProvider,
+    from aspy_dependency_injection.abstractions.base_service_provider import (
+        BaseServiceProvider,
     )
 
 
@@ -17,5 +17,5 @@ class ServiceScope(AbstractAsyncContextManager["ServiceScope"], ABC):
 
     @property
     @abstractmethod
-    def service_provider(self) -> ServiceProvider:
+    def service_provider(self) -> BaseServiceProvider:
         """Gets the ServiceProvider used to resolve dependencies from the scope."""

@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING, Final, Self
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
+    from aspy_dependency_injection.abstractions.base_service_provider import (
+        BaseServiceProvider,
+    )
     from aspy_dependency_injection.service_lifetime import ServiceLifetime
 
 
@@ -13,8 +15,10 @@ class ServiceDescriptor:
     _service_type: Final[type]
     _lifetime: Final[ServiceLifetime]
     _implementation_type: type | None
-    _sync_implementation_factory: Callable[[ServiceProvider], object] | None
-    _async_implementation_factory: Callable[[ServiceProvider], Awaitable[object]] | None
+    _sync_implementation_factory: Callable[[BaseServiceProvider], object] | None
+    _async_implementation_factory: (
+        Callable[[BaseServiceProvider], Awaitable[object]] | None
+    )
 
     def __init__(self, service_type: type, lifetime: ServiceLifetime) -> None:
         self._service_type = service_type
@@ -36,13 +40,15 @@ class ServiceDescriptor:
         return self._implementation_type
 
     @property
-    def sync_implementation_factory(self) -> Callable[[ServiceProvider], object] | None:
+    def sync_implementation_factory(
+        self,
+    ) -> Callable[[BaseServiceProvider], object] | None:
         return self._sync_implementation_factory
 
     @property
     def async_implementation_factory(
         self,
-    ) -> Callable[[ServiceProvider], Awaitable[object]] | None:
+    ) -> Callable[[BaseServiceProvider], Awaitable[object]] | None:
         return self._async_implementation_factory
 
     @classmethod
@@ -57,7 +63,7 @@ class ServiceDescriptor:
     def from_sync_implementation_factory(
         cls,
         service_type: type,
-        implementation_factory: Callable[[ServiceProvider], object],
+        implementation_factory: Callable[[BaseServiceProvider], object],
         lifetime: ServiceLifetime,
     ) -> Self:
         self = cls(service_type=service_type, lifetime=lifetime)
@@ -68,7 +74,7 @@ class ServiceDescriptor:
     def from_async_implementation_factory(
         cls,
         service_type: type,
-        implementation_factory: Callable[[ServiceProvider], Awaitable[object]],
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[object]],
         lifetime: ServiceLifetime,
     ) -> Self:
         self = cls(service_type=service_type, lifetime=lifetime)

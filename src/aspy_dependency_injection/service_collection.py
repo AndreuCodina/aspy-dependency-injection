@@ -1,16 +1,18 @@
 import asyncio
 from typing import TYPE_CHECKING, Final, overload
 
-from aspy_dependency_injection.default_service_provider import (
-    DefaultServiceProvider,
-)
 from aspy_dependency_injection.service_descriptor import ServiceDescriptor
 from aspy_dependency_injection.service_lifetime import ServiceLifetime
+from aspy_dependency_injection.service_provider import (
+    ServiceProvider,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from aspy_dependency_injection.abstractions.service_provider import ServiceProvider
+    from aspy_dependency_injection.abstractions.base_service_provider import (
+        BaseServiceProvider,
+    )
 
 
 class ServiceCollection:
@@ -32,21 +34,21 @@ class ServiceCollection:
     def add_transient[TService](
         self,
         service_type: type[TService],
-        implementation_factory: Callable[[ServiceProvider], Awaitable[TService]],
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[TService]],
     ) -> None: ...
 
     @overload
     def add_transient[TService](
         self,
         service_type: type[TService],
-        implementation_factory: Callable[[ServiceProvider], TService],
+        implementation_factory: Callable[[BaseServiceProvider], TService],
     ) -> None: ...
 
     def add_transient[TService](
         self,
         service_type: type[TService],
-        implementation_factory: Callable[[ServiceProvider], Awaitable[TService]]
-        | Callable[[ServiceProvider], TService]
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[TService]]
+        | Callable[[BaseServiceProvider], TService]
         | None = None,
     ) -> None:
         if implementation_factory is None:
@@ -74,9 +76,9 @@ class ServiceCollection:
     def add_scoped(self, service_type: type) -> None:
         pass
 
-    def build_service_provider(self) -> DefaultServiceProvider:
+    def build_service_provider(self) -> ServiceProvider:
         """Create a DefaultServiceProvider containing services from the provided ServiceCollection."""
-        return DefaultServiceProvider(self)
+        return ServiceProvider(self)
 
     def _add_from_implentation_type(
         self, service_type: type, implementation_type: type, lifetime: ServiceLifetime
@@ -91,7 +93,7 @@ class ServiceCollection:
     def _add_from_sync_implementation_factory(
         self,
         service_type: type,
-        implementation_factory: Callable[[ServiceProvider], object],
+        implementation_factory: Callable[[BaseServiceProvider], object],
         lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_sync_implementation_factory(
@@ -104,7 +106,7 @@ class ServiceCollection:
     def _add_from_async_implementation_factory(
         self,
         service_type: type,
-        implementation_factory: Callable[[ServiceProvider], Awaitable[object]],
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[object]],
         lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_async_implementation_factory(

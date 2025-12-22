@@ -19,8 +19,8 @@ if TYPE_CHECKING:
     from starlette.routing import BaseRoute
     from starlette.types import ASGIApp, Receive, Scope, Send
 
-    from aspy_dependency_injection.default_service_provider import (
-        DefaultServiceProvider,
+    from aspy_dependency_injection.service_provider import (
+        ServiceProvider,
         ServiceScope,
     )
     from aspy_dependency_injection.service_collection import ServiceCollection
@@ -37,9 +37,7 @@ class FastApiDependencyInjection:
         self._update_lifespan(app, service_provider)
         self._inject_routes(app.routes)
 
-    def _update_lifespan(
-        self, app: FastAPI, service_provider: DefaultServiceProvider
-    ) -> None:
+    def _update_lifespan(self, app: FastAPI, service_provider: ServiceProvider) -> None:
         old_lifespan = app.router.lifespan_context
 
         @asynccontextmanager
@@ -165,9 +163,7 @@ class _AspyAsgiMiddleware:
                 await self.app(scope, receive, send)
                 return None
 
-            service_provider: DefaultServiceProvider = (
-                request.app.state.aspy_service_provider
-            )
+            service_provider: ServiceProvider = request.app.state.aspy_service_provider
 
             async with service_provider.create_scope() as service_scope:
                 request.state.aspy_service_scope = service_scope

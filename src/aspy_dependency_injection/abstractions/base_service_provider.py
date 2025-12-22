@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import cast
 
 
-class ServiceProvider(ABC):
+class BaseServiceProvider(ABC):
     """Define a mechanism for retrieving a service object; that is, an object that provides custom support to other objects."""
 
     @abstractmethod
