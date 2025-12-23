@@ -68,6 +68,10 @@ class ServiceProvider(
         self._is_disposed = False
 
     @property
+    def root(self) -> ServiceProviderEngineScope:
+        return self._root
+
+    @property
     def is_disposed(self) -> bool:
         return self._is_disposed
 

@@ -36,9 +36,6 @@ class ServiceWithAsyncContextManagerAndNoDependencies(
     DisposeViewer,
     AbstractAsyncContextManager["ServiceWithAsyncContextManagerAndNoDependencies"],
 ):
-    def __init__(self) -> None:
-        super().__init__()
-
     async def __aenter__(
         self,
     ) -> Self:
@@ -64,10 +61,10 @@ class ServiceWithAsyncContextManagerAndDependencies(
         self,
         service_with_async_context_manager_and_no_dependencies: ServiceWithAsyncContextManagerAndNoDependencies,
     ) -> None:
+        super().__init__()
         self.service_with_async_context_manager_and_no_dependencies = (
             service_with_async_context_manager_and_no_dependencies
         )
-        super().__init__()
 
     async def __aenter__(
         self,

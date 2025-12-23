@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Flag
 from typing import TYPE_CHECKING, ClassVar, final, override
 
 from aspy_dependency_injection._service_lookup._call_site_visitor import CallSiteVisitor
@@ -27,9 +28,16 @@ if TYPE_CHECKING:
     )
 
 
+class _RuntimeResolverLock(Flag):
+    NONE = 0
+    SCOPE = 1
+    ROOT = 2
+
+
 @dataclass(frozen=True)
 class RuntimeResolverContext:
     scope: ServiceProviderEngineScope
+    acquired_locks: _RuntimeResolverLock
 
 
 @final
@@ -40,8 +48,45 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         self, call_site: ServiceCallSite, scope: ServiceProviderEngineScope
     ) -> object | None:
         return await self._visit_call_site(
-            call_site, RuntimeResolverContext(scope=scope)
+            call_site,
+            RuntimeResolverContext(
+                scope=scope, acquired_locks=_RuntimeResolverLock.NONE
+            ),
         )
+
+    @override
+    async def _visit_root_cache(
+        self, call_site: ServiceCallSite, argument: RuntimeResolverContext
+    ) -> object | None:
+        # If the value is already calculated, return it directly
+        if call_site.value is not None:
+            return call_site.value
+
+        lock_type = _RuntimeResolverLock.ROOT
+        service_provider_engine_scope = argument.scope.root_provider.root
+
+        async with call_site.lock:
+            # Lock the callsite and check if another thread already cached the value
+            if call_site.value is not None:
+                return call_site.value
+
+            resolved_service = await self._visit_call_site_main(
+                call_site=call_site,
+                argument=RuntimeResolverContext(
+                    scope=service_provider_engine_scope,
+                    acquired_locks=argument.acquired_locks | lock_type,
+                ),
+            )
+            await service_provider_engine_scope.capture_disposable(resolved_service)
+            call_site.value = resolved_service
+            return resolved_service
+
+    @override
+    async def _visit_dispose_cache(
+        self, call_site: ServiceCallSite, argument: RuntimeResolverContext
+    ) -> object | None:
+        service = await self._visit_call_site_main(call_site, argument)
+        return await argument.scope.capture_disposable(service)
 
     @override
     async def _visit_constructor(
@@ -62,13 +107,6 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
                 service.__enter__()
 
         return service
-
-    @override
-    async def _visit_dispose_cache(
-        self, call_site: ServiceCallSite, argument: RuntimeResolverContext
-    ) -> object | None:
-        service = await self._visit_call_site_main(call_site, argument)
-        return await argument.scope.capture_disposable(service)
 
     @override
     def _visit_sync_factory(

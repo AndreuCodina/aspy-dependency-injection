@@ -52,9 +52,13 @@ class ServiceProviderEngineScope(
         self._disposables = None
 
     @property
+    def root_provider(self) -> ServiceProvider:
+        return self._root_provider
+
+    @property
     @override
     def service_provider(self) -> BaseServiceProvider:
-        return self._root_provider
+        return self
 
     @override
     def create_scope(self) -> ServiceScope:

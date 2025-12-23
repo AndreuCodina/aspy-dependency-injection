@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 @final
 class SyncFactoryCallSite(ServiceCallSite):
-    _cache: Final[ResultCache]
     _service_type: Final[type]
     _implementation_factory: Final[Callable[[BaseServiceProvider], object]]
 
@@ -24,13 +23,9 @@ class SyncFactoryCallSite(ServiceCallSite):
         service_type: type,
         implementation_factory: Callable[[BaseServiceProvider], object],
     ) -> None:
-        self._cache = cache
+        super().__init__(cache)
         self._service_type = service_type
         self._implementation_factory = implementation_factory
-
-    @property
-    def cache(self) -> ResultCache:
-        return self._cache
 
     @property
     @override

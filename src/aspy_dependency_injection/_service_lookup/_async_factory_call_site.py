@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 @final
 class AsyncFactoryCallSite(ServiceCallSite):
-    _cache: Final[ResultCache]
     _service_type: Final[type]
     _implementation_factory: Final[Callable[[BaseServiceProvider], Awaitable[object]]]
 
@@ -24,13 +23,9 @@ class AsyncFactoryCallSite(ServiceCallSite):
         service_type: type,
         implementation_factory: Callable[[BaseServiceProvider], Awaitable[object]],
     ) -> None:
-        self._cache = cache
+        super().__init__(cache)
         self._service_type = service_type
         self._implementation_factory = implementation_factory
-
-    @property
-    def cache(self) -> ResultCache:
-        return self._cache
 
     @property
     @override

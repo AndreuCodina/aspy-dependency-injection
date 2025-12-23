@@ -26,6 +26,8 @@ class ResultCache:
         slot: int,
     ) -> None:
         match lifetime:
+            case ServiceLifetime.SINGLETON:
+                self._location = CallSiteResultCacheLocation.ROOT
             case ServiceLifetime.TRANSIENT:
                 self._location = CallSiteResultCacheLocation.DISPOSE
             case _:

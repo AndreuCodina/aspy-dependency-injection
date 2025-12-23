@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 @final
 class ConstructorCallSite(ServiceCallSite):
-    _cache: Final[ResultCache]
     _service_type: Final[type]
     _constructor_information: Final[ConstructorInformation]
     _parameter_call_sites: Final[list[ServiceCallSite]]
@@ -25,14 +24,10 @@ class ConstructorCallSite(ServiceCallSite):
         constructor_information: ConstructorInformation,
         parameter_call_sites: list[ServiceCallSite],
     ) -> None:
-        self._cache = cache
+        super().__init__(cache)
         self._service_type = service_type
         self._constructor_information = constructor_information
         self._parameter_call_sites = parameter_call_sites
-
-    @property
-    def cache(self) -> ResultCache:
-        return self._cache
 
     @property
     @override

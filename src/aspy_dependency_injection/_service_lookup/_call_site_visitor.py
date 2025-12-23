@@ -26,6 +26,8 @@ class CallSiteVisitor[TArgument, TResult](ABC):
         self, call_site: ServiceCallSite, argument: TArgument
     ) -> TResult:
         match call_site.cache.location:
+            case CallSiteResultCacheLocation.ROOT:
+                return await self._visit_root_cache(call_site, argument)
             case CallSiteResultCacheLocation.DISPOSE:
                 return await self._visit_dispose_cache(call_site, argument)
             case CallSiteResultCacheLocation.NONE:
@@ -33,12 +35,17 @@ class CallSiteVisitor[TArgument, TResult](ABC):
             case _:
                 raise NotImplementedError
 
-    async def _visit_no_cache(
+    async def _visit_root_cache(
         self, call_site: ServiceCallSite, argument: TArgument
     ) -> TResult:
         return await self._visit_call_site_main(call_site, argument)
 
     async def _visit_dispose_cache(
+        self, call_site: ServiceCallSite, argument: TArgument
+    ) -> TResult:
+        return await self._visit_call_site_main(call_site, argument)
+
+    async def _visit_no_cache(
         self, call_site: ServiceCallSite, argument: TArgument
     ) -> TResult:
         return await self._visit_call_site_main(call_site, argument)

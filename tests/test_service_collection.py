@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from aspy_dependency_injection.service_collection import ServiceCollection
+from aspy_dependency_injection.service_lifetime import ServiceLifetime
 from tests.utils.services import (
     DisposeViewer,
     SelfCircularDependencyService,
@@ -28,9 +29,29 @@ class Child(Father):
 
 
 class TestServiceCollection:
-    async def test_resolve_transient_service_with_no_dependencies(self) -> None:
+    @pytest.mark.parametrize(
+        argnames=("service_lifetime"),
+        argvalues=[
+            (ServiceLifetime.SINGLETON),
+            (ServiceLifetime.TRANSIENT),
+        ],
+        ids=[
+            "singleton",
+            "transient",
+        ],
+    )
+    async def test_resolve_service_with_no_dependencies(
+        self, service_lifetime: ServiceLifetime
+    ) -> None:
         services = ServiceCollection()
-        services.add_transient(ServiceWithNoDependencies)
+
+        match service_lifetime:
+            case ServiceLifetime.SINGLETON:
+                services.add_singleton(ServiceWithNoDependencies)
+            case ServiceLifetime.TRANSIENT:
+                services.add_transient(ServiceWithNoDependencies)
+            case ServiceLifetime.SCOPED:
+                raise NotImplementedError
 
         async with services.build_service_provider() as service_provider:
             resolved_service = await service_provider.get_required_service(
