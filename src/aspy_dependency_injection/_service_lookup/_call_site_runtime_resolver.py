@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Flag
 from typing import TYPE_CHECKING, ClassVar, final, override
 
+from aspy_dependency_injection._aspy_undefined import AspyUndefined
 from aspy_dependency_injection._service_lookup._call_site_visitor import CallSiteVisitor
 from aspy_dependency_injection._service_lookup._supports_async_context_manager import (
     SupportsAsyncContextManager,
@@ -66,7 +67,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         service_provider_engine_scope = argument.scope.root_provider.root
 
         async with call_site.lock:
-            # Lock the callsite and check if another thread already cached the value
+            # Lock the callsite and check if another coroutine already cached the value
             if call_site.value is not None:
                 return call_site.value
 
@@ -80,6 +81,62 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
             await service_provider_engine_scope.capture_disposable(resolved_service)
             call_site.value = resolved_service
             return resolved_service
+
+    @override
+    async def _visit_scope_cache(
+        self, call_site: ServiceCallSite, argument: RuntimeResolverContext
+    ) -> object | None:
+        # Check if we are in the situation where scoped service was promoted to singleton
+        # and we need to lock the root
+        if argument.scope.is_root_scope:
+            return await self._visit_root_cache(call_site, argument)
+
+        return await self._visit_cache(
+            call_site, argument, argument.scope, _RuntimeResolverLock.SCOPE
+        )
+
+    async def _visit_cache(
+        self,
+        call_site: ServiceCallSite,
+        argument: RuntimeResolverContext,
+        service_provider_engine_scope: ServiceProviderEngineScope,
+        lock_type: _RuntimeResolverLock,
+    ) -> object | None:
+        is_lock_taken = False
+        resolved_services_lock = service_provider_engine_scope.resolved_services_lock
+        resolved_services = service_provider_engine_scope.realized_services
+
+        # Taking locks only once allows us to fork resolution process
+        # on another coroutine without causing the deadlock because we
+        # always know that we are going to wait the other coroutine to finish before
+        # releasing the lock
+        if (argument.acquired_locks & lock_type) == _RuntimeResolverLock.NONE:
+            await resolved_services_lock.acquire()
+            is_lock_taken = True
+
+        try:
+            # Note: This method has already taken lock by the caller for resolution and access synchronization.
+            # For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
+            resolved_service = resolved_services.get(
+                call_site.cache.key, AspyUndefined.INSTANCE
+            )
+
+            if resolved_service is not AspyUndefined.INSTANCE:
+                return resolved_service
+
+            resolved_service = await self._visit_call_site_main(
+                call_site=call_site,
+                argument=RuntimeResolverContext(
+                    scope=service_provider_engine_scope,
+                    acquired_locks=argument.acquired_locks | lock_type,
+                ),
+            )
+            await service_provider_engine_scope.capture_disposable(resolved_service)
+            resolved_services[call_site.cache.key] = resolved_service
+            return resolved_service
+        finally:
+            if is_lock_taken:
+                resolved_services_lock.release()
 
     @override
     async def _visit_dispose_cache(

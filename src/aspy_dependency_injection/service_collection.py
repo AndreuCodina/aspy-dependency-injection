@@ -113,8 +113,48 @@ class ServiceCollection:
                 lifetime=ServiceLifetime.SINGLETON,
             )
 
-    def add_scoped(self, service_type: type) -> None:
-        pass
+    @overload
+    def add_scoped[TService](self, service_type: type[TService]) -> None: ...
+
+    @overload
+    def add_scoped[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[TService]],
+    ) -> None: ...
+
+    @overload
+    def add_scoped[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[BaseServiceProvider], TService],
+    ) -> None: ...
+
+    def add_scoped[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[[BaseServiceProvider], Awaitable[TService]]
+        | Callable[[BaseServiceProvider], TService]
+        | None = None,
+    ) -> None:
+        if implementation_factory is None:
+            self._add_from_implentation_type(
+                service_type=service_type,
+                implementation_type=service_type,
+                lifetime=ServiceLifetime.SCOPED,
+            )
+        elif asyncio.iscoroutinefunction(implementation_factory):
+            self._add_from_async_implementation_factory(
+                service_type=service_type,
+                implementation_factory=implementation_factory,
+                lifetime=ServiceLifetime.SCOPED,
+            )
+        else:
+            self._add_from_sync_implementation_factory(
+                service_type=service_type,
+                implementation_factory=implementation_factory,
+                lifetime=ServiceLifetime.SCOPED,
+            )
 
     def build_service_provider(self) -> ServiceProvider:
         """Create a ServiceProvider containing services from the provided ServiceCollection."""

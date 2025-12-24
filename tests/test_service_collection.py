@@ -33,12 +33,10 @@ class TestServiceCollection:
         argnames=("service_lifetime"),
         argvalues=[
             (ServiceLifetime.SINGLETON),
+            (ServiceLifetime.SCOPED),
             (ServiceLifetime.TRANSIENT),
         ],
-        ids=[
-            "singleton",
-            "transient",
-        ],
+        ids=["singleton", "scoped", "transient"],
     )
     async def test_resolve_service_with_no_dependencies(
         self, service_lifetime: ServiceLifetime
@@ -48,10 +46,10 @@ class TestServiceCollection:
         match service_lifetime:
             case ServiceLifetime.SINGLETON:
                 services.add_singleton(ServiceWithNoDependencies)
+            case ServiceLifetime.SCOPED:
+                services.add_scoped(ServiceWithNoDependencies)
             case ServiceLifetime.TRANSIENT:
                 services.add_transient(ServiceWithNoDependencies)
-            case ServiceLifetime.SCOPED:
-                raise NotImplementedError
 
         async with services.build_service_provider() as service_provider:
             resolved_service = await service_provider.get_required_service(
@@ -60,9 +58,27 @@ class TestServiceCollection:
 
             assert isinstance(resolved_service, ServiceWithNoDependencies)
 
-    async def test_resolve_transient_service_using_scope(self) -> None:
+    @pytest.mark.parametrize(
+        argnames=("service_lifetime"),
+        argvalues=[
+            (ServiceLifetime.SINGLETON),
+            (ServiceLifetime.SCOPED),
+            (ServiceLifetime.TRANSIENT),
+        ],
+        ids=["singleton", "scoped", "transient"],
+    )
+    async def test_resolve_service_using_scope(
+        self, service_lifetime: ServiceLifetime
+    ) -> None:
         services = ServiceCollection()
-        services.add_transient(ServiceWithNoDependencies)
+
+        match service_lifetime:
+            case ServiceLifetime.SINGLETON:
+                services.add_singleton(ServiceWithNoDependencies)
+            case ServiceLifetime.SCOPED:
+                services.add_scoped(ServiceWithNoDependencies)
+            case ServiceLifetime.TRANSIENT:
+                services.add_transient(ServiceWithNoDependencies)
 
         async with (
             services.build_service_provider() as service_provider,

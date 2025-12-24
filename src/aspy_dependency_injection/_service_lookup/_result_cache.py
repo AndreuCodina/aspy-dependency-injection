@@ -28,13 +28,17 @@ class ResultCache:
         match lifetime:
             case ServiceLifetime.SINGLETON:
                 self._location = CallSiteResultCacheLocation.ROOT
+            case ServiceLifetime.SCOPED:
+                self._location = CallSiteResultCacheLocation.SCOPE
             case ServiceLifetime.TRANSIENT:
                 self._location = CallSiteResultCacheLocation.DISPOSE
-            case _:
-                self._location = CallSiteResultCacheLocation.NONE
 
         self._key = ServiceCacheKey(service_identifier, slot)
 
     @property
     def location(self) -> CallSiteResultCacheLocation:
         return self._location
+
+    @property
+    def key(self) -> ServiceCacheKey:
+        return self._key

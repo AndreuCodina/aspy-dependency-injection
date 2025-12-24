@@ -22,6 +22,9 @@ from aspy_dependency_injection.exceptions import ObjectDisposedError
 if TYPE_CHECKING:
     from types import TracebackType
 
+    from aspy_dependency_injection._service_lookup.service_cache_key import (
+        ServiceCacheKey,
+    )
     from aspy_dependency_injection.service_provider import (
         ServiceProvider,
     )
@@ -36,24 +39,39 @@ class ServiceProviderEngineScope(
     _root_provider: Final[ServiceProvider]
     _is_root_scope: Final[bool]
     _is_disposed: bool
-
-    # This lock protects state on the scope, in particular, for the root scope, it protects
-    # the list of disposable entries only, since ResolvedServices are cached on CallSites
-    # For other scopes, it protects ResolvedServices and the list of disposables
+    _resolved_services: dict[ServiceCacheKey, object | None]
     _resolved_services_lock: asyncio.Lock
-
     _disposables: list[object] | None
 
     def __init__(self, service_provider: ServiceProvider, is_root_scope: bool) -> None:
         self._root_provider = service_provider
         self._is_root_scope = is_root_scope
         self._is_disposed = False
+        self._resolved_services = {}
         self._resolved_services_lock = asyncio.Lock()
         self._disposables = None
 
     @property
     def root_provider(self) -> ServiceProvider:
         return self._root_provider
+
+    @property
+    def is_root_scope(self) -> bool:
+        return self._is_root_scope
+
+    @property
+    def realized_services(self) -> dict[ServiceCacheKey, object | None]:
+        return self._resolved_services
+
+    @property
+    def resolved_services_lock(self) -> asyncio.Lock:
+        """Protect the state on the scope.
+
+        In particular, for the root scope, it protects the list of disposable entries only, since resolved_services are cached on CallSites.
+
+        For other scopes, it protects resolved_services and the list of disposables.
+        """
+        return self._resolved_services_lock
 
     @property
     @override
@@ -109,7 +127,7 @@ class ServiceProviderEngineScope(
 
             # We've transitioned to the disposed state, so future calls to
             # capture_disposable will immediately dispose the object.
-            # No further changes to _state.Disposables, are allowed.
+            # No further changes to disposables are allowed.
             self._is_disposed = True
 
         if self._is_root_scope and not self._root_provider.is_disposed:
