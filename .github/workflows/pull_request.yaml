@@ -40,7 +40,7 @@ jobs:
         shell: bash
 
       - name: Check code
-        run: make check-code
+        run: make check-code-pyright
         shell: bash
 
       - name: Type-check with ty
