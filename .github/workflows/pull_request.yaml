@@ -13,6 +13,8 @@ jobs:
   continuous-integration:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Allow Coveralls to comment on the PR
     strategy:
       matrix:
         python-version: ["3.14"]
