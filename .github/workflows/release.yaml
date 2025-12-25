@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  continuous-integration:
+  release:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-24.04
     steps:
@@ -33,5 +33,5 @@ jobs:
         shell: bash
 
       - name: Publish to PyPI
-        run: uv publish
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
         shell: bash
