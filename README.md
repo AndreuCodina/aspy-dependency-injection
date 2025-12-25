@@ -1,11 +1,13 @@
+<div align="center">
 <img alt="Logo" src="docs/logo.png" width="522" height="348">
 
 [![CI](https://img.shields.io/github/actions/workflow/status/AndreuCodina/aspy-dependency-injection/main.yaml?branch=main&logo=github&label=CI)](https://github.com/AndreuCodina/aspy-dependency-injection/actions/workflows/main.yaml)
 [![Coverage status](https://coveralls.io/repos/github/AndreuCodina/aspy-dependency-injection/badge.svg?branch=main)](https://coveralls.io/github/AndreuCodina/aspy-dependency-injection?branch=main)
 ![PyPI - Version](https://img.shields.io/pypi/v/aspy-dependency-injection?color=blue&label=pypi)
 [![license](https://img.shields.io/github/license/AndreuCodina/aspy-dependency-injection.svg)](https://github.com/AndreuCodina/aspy-dependency-injection/blob/main/LICENSE)
+</div>
 
-## Aspy Dependency Injection
+## Features
 - **Lightweight DI container** inspired by ASP.NET Core.
 - **Lifetimes**: `Singleton` (same instance per application), `Scoped` (same instance per HTTP request scope) and `Transient` (different instance per resolution).
 - **Automatic resolution and disposal**: Automatically resolve constructor parameters and manage async and non-async context managers.
