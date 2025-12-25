@@ -36,7 +36,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python packages
-        run: uv sync --locked
+        run: uv sync --locked --resolution ${{ matrix.resolution-strategy }}
         shell: bash
 
       - name: Check code
