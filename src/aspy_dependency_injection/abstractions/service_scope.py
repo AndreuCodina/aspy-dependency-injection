@@ -18,4 +18,4 @@ class ServiceScope(AbstractAsyncContextManager["ServiceScope"], ABC):
     @property
     @abstractmethod
     def service_provider(self) -> BaseServiceProvider:
-        """Gets the ServiceProvider used to resolve dependencies from the scope."""
+        """Gets the :class:`BaseServiceProvider` used to resolve dependencies from the scope."""

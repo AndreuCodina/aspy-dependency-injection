@@ -4,7 +4,7 @@ from aspy_dependency_injection.injectable import Injectable
 
 
 def Inject() -> Injectable:  # noqa: N802
-    """Inject Depends for FastAPI integration."""
+    """Inject :func:`Depends` for FastAPI integration."""
 
     def _dependency() -> Injectable:
         return Injectable()

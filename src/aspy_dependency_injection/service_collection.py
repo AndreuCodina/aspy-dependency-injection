@@ -157,7 +157,7 @@ class ServiceCollection:
             )
 
     def build_service_provider(self) -> ServiceProvider:
-        """Create a ServiceProvider containing services from the provided ServiceCollection."""
+        """Create a :class:`ServiceProvider` containing services from the provided :class:`ServiceCollection`."""
         return ServiceProvider(self)
 
     def _add_from_implentation_type(
