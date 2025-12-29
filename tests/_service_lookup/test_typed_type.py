@@ -109,6 +109,11 @@ class TestTypedType:
                 CustomClassWithOptionalGeneric2,
                 False,
             ),
+            (
+                CustomClassWithGenerics1[int, str],
+                CustomClassWithGenerics1[str, int],
+                False,
+            ),
         ],
     )
     def test_equality_and_hash(

@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from aspy_dependency_injection._service_lookup._service_identifier import (
         ServiceIdentifier,
     )
-    from tests._service_lookup.test_typed_type import TypedType
+    from aspy_dependency_injection._service_lookup._typed_type import TypedType
 
 
 @final
