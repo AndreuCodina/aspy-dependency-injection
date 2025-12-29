@@ -84,7 +84,7 @@ class ServiceProvider(
         )
 
     def create_scope(self) -> ServiceScope:
-        """Create a new ServiceScope that can be used to resolve scoped services."""
+        """Create a new :class:`ServiceScope` that can be used to resolve scoped services."""
         return ServiceProviderEngineScope(service_provider=self, is_root_scope=False)
 
     async def get_service_from_service_identifier(
