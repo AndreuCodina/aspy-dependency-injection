@@ -1,3 +1,6 @@
+from contextlib import AbstractAsyncContextManager
+from typing import TYPE_CHECKING, Self, override
+
 import pytest
 
 from aspy_dependency_injection.abstractions.base_service_provider import (
@@ -14,6 +17,9 @@ from tests.utils.services import (
     ServiceWithNoDependencies,
     ServiceWithSyncContextManagerAndNoDependencies,
 )
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 class TestServiceCollection:
@@ -157,7 +163,7 @@ class TestServiceCollection:
             resolved_service = await service_provider.get_required_service(service_type)
 
             assert isinstance(resolved_service, service_type)
-            assert not resolved_service.is_disposed
+            assert resolved_service.is_disposed_initialized
 
         assert resolved_service.is_disposed
 
@@ -231,3 +237,117 @@ class TestServiceCollection:
             )
 
             assert isinstance(resolved_service, BaseServiceProvider)
+
+    async def test_resolve_implementation_factory_with_service_injected(self) -> None:
+        class Service1:
+            pass
+
+        class Service2:
+            pass
+
+        def implementation_factory(
+            service_1: Service1,
+        ) -> Service2:
+            assert isinstance(service_1, Service1)
+            return Service2()
+
+        services = ServiceCollection()
+        services.add_transient(Service2, implementation_factory)
+        services.add_transient(Service1)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service_1 = await service_provider.get_required_service(Service1)
+            assert isinstance(resolved_service_1, Service1)
+
+            resolved_service_2 = await service_provider.get_required_service(Service2)
+            assert isinstance(resolved_service_2, Service2)
+
+    @pytest.mark.parametrize(
+        argnames=("is_async_implementation_factory"),
+        argvalues=[
+            (True),
+            (False),
+        ],
+        ids=[
+            "async_implementation_factory",
+            "sync_implementation_factory",
+        ],
+    )
+    async def test_context_manager_is_called_with_implementation_factory(
+        self, is_async_implementation_factory: bool
+    ) -> None:
+        class Service1(DisposeViewer, AbstractAsyncContextManager["Service1"]):
+            @override
+            async def __aenter__(self) -> Self:
+                self._enter_context()
+                return self
+
+            @override
+            async def __aexit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc_val: BaseException | None,
+                exc_tb: TracebackType | None,
+            ) -> bool | None:
+                self._exit_context()
+                return None
+
+        class Service2(DisposeViewer, AbstractAsyncContextManager["Service2"]):
+            def __init__(self, service_1: Service1) -> None:
+                super().__init__()
+                self.service_1 = service_1
+
+            @override
+            async def __aenter__(self) -> Self:
+                self._enter_context()
+                return self
+
+            @override
+            async def __aexit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc_val: BaseException | None,
+                exc_tb: TracebackType | None,
+            ) -> bool | None:
+                self._exit_context()
+                return None
+
+        async def async_inject_service_2(
+            service_1: Service1,
+        ) -> Service2:
+            assert isinstance(
+                service_1,
+                Service1,
+            )
+            assert service_1.is_disposed_initialized
+            return Service2(service_1)
+
+        def sync_inject_service_2(
+            service_1: Service1,
+        ) -> Service2:
+            assert isinstance(
+                service_1,
+                Service1,
+            )
+            assert service_1.is_disposed_initialized
+            return Service2(service_1)
+
+        services = ServiceCollection()
+        services.add_transient(Service1)
+        services.add_transient(
+            Service2,
+            async_inject_service_2
+            if is_async_implementation_factory
+            else sync_inject_service_2,
+        )
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service_2 = await service_provider.get_required_service(Service2)
+
+            assert isinstance(resolved_service_2, Service2)
+            assert isinstance(resolved_service_2.service_1, Service1)
+            assert resolved_service_2.service_1.is_disposed_initialized
+            assert resolved_service_2.is_disposed_initialized
+
+        assert resolved_service_2.service_1.is_disposed
+        assert resolved_service_2.is_disposed

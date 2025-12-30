@@ -1,4 +1,4 @@
-from typing import Final, override
+from typing import Final, final, override
 
 from aspy_dependency_injection._service_lookup._call_site_kind import CallSiteKind
 from aspy_dependency_injection._service_lookup._result_cache import ResultCache
@@ -9,6 +9,7 @@ from aspy_dependency_injection.abstractions.base_service_provider import (
 )
 
 
+@final
 class ServiceProviderCallSite(ServiceCallSite):
     _service_type: Final[TypedType]
 

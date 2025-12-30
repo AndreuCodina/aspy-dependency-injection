@@ -169,11 +169,10 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         ]
         service = constructor_call_site.constructor_information.invoke(parameter_values)
 
-        if service is not self:
-            if isinstance(service, SupportsAsyncContextManager):
-                await service.__aenter__()
-            elif isinstance(service, SupportsContextManager):
-                service.__enter__()
+        if isinstance(service, SupportsAsyncContextManager):
+            await service.__aenter__()
+        elif isinstance(service, SupportsContextManager):
+            service.__enter__()
 
         return service
 
@@ -186,7 +185,14 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         parameter_services = await self.get_parameter_services(
             sync_factory_call_site.implementation_factory, argument.scope
         )
-        return sync_factory_call_site.implementation_factory(*parameter_services)
+        service = sync_factory_call_site.implementation_factory(*parameter_services)
+
+        if isinstance(service, SupportsAsyncContextManager):
+            await service.__aenter__()
+        elif isinstance(service, SupportsContextManager):
+            service.__enter__()
+
+        return service
 
     @override
     async def _visit_async_factory(
@@ -197,7 +203,16 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         parameter_services = await self.get_parameter_services(
             async_factory_call_site.implementation_factory, argument.scope
         )
-        return await async_factory_call_site.implementation_factory(*parameter_services)
+        service = await async_factory_call_site.implementation_factory(
+            *parameter_services
+        )
+
+        if isinstance(service, SupportsAsyncContextManager):
+            await service.__aenter__()
+        elif isinstance(service, SupportsContextManager):
+            service.__enter__()
+
+        return service
 
     @override
     def _visit_service_provider(
@@ -221,9 +236,12 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         implementation_factory: Callable[..., Awaitable[object]]
         | Callable[..., object],
     ) -> list[type]:
-        type_hints = get_type_hints(implementation_factory)
-        del type_hints["return"]
-        return list(type_hints.values())
+        type_hints: dict[str, type] = get_type_hints(implementation_factory)
+        return [
+            parameter_type
+            for parameter_name, parameter_type in type_hints.items()
+            if parameter_name != "return"
+        ]
 
 
 CallSiteRuntimeResolver.INSTANCE = CallSiteRuntimeResolver()
