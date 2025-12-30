@@ -162,6 +162,7 @@ class ServiceCollection:
         return ServiceProvider(self)
 
     def configure_fastapi(self, app: FastAPI) -> None:
+        """Configure the FastAPI application to use dependency injection using the services from this service collection."""
         FastApiDependencyInjection.setup(app, self)
 
     def _add_from_implementation_type(
