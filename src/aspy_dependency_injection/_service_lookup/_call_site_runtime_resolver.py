@@ -229,7 +229,24 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         scope: ServiceProviderEngineScope,
     ) -> list[object | None]:
         parameter_types = self._get_parameter_types(implementation_factory)
-        return [await scope.get_service_object(TypedType(i)) for i in parameter_types]
+        parameter_services: list[object] = []
+
+        for parameter_type in parameter_types:
+            parameter_service = await scope.get_service_object(
+                TypedType(parameter_type)
+            )
+
+            if parameter_service is None:
+                error_message = (
+                    f"Unable to resolve service for type '{parameter_type}' "
+                    f"while attempting to invoke implementation factory "
+                    f"'{implementation_factory}'."
+                )
+                raise RuntimeError(error_message)
+
+            parameter_services.append(parameter_service)
+
+        return parameter_services
 
     def _get_parameter_types(
         self,

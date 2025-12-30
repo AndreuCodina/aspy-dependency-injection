@@ -423,3 +423,24 @@ class TestServiceCollection:
 
         assert resolved_service_2.service_1.is_disposed
         assert resolved_service_2.is_disposed
+
+    async def test_fail_when_implementation_factory_requests_not_registered_service(
+        self,
+    ) -> None:
+        class Service1:
+            pass
+
+        class Service2:
+            pass
+
+        def implementation_factory(
+            _: Service1,
+        ) -> Service2:
+            return Service2()
+
+        services = ServiceCollection()
+        services.add_transient(Service2, implementation_factory)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(RuntimeError):
+                await service_provider.get_required_service(Service2)
