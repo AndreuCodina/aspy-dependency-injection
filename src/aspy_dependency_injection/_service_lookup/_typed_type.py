@@ -38,7 +38,7 @@ class TypedType(Hashable):
         instance_type = getattr(instance, "__orig_class__", None)
 
         if instance_type is None:
-            error_message = "The instance does not retain type hint information because it hasn't generics"
+            error_message = "The instance does not retain type hint information because it has no generics"
             raise ValueError(error_message)
 
         return cls(instance_type)

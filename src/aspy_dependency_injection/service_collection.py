@@ -72,7 +72,9 @@ class ServiceCollection:
         /,
     ) -> None:
         self._add_from_overloaded_constructor(
-            service_type_or_implementation_factory, implementation_factory
+            ServiceLifetime.TRANSIENT,
+            service_type_or_implementation_factory,
+            implementation_factory,
         )
 
     @overload
@@ -119,7 +121,9 @@ class ServiceCollection:
         /,
     ) -> None:
         self._add_from_overloaded_constructor(
-            service_type_or_implementation_factory, implementation_factory
+            ServiceLifetime.SINGLETON,
+            service_type_or_implementation_factory,
+            implementation_factory,
         )
 
     @overload
@@ -166,7 +170,9 @@ class ServiceCollection:
         /,
     ) -> None:
         self._add_from_overloaded_constructor(
-            service_type_or_implementation_factory, implementation_factory
+            ServiceLifetime.SCOPED,
+            service_type_or_implementation_factory,
+            implementation_factory,
         )
 
     def build_service_provider(self) -> ServiceProvider:
@@ -179,6 +185,7 @@ class ServiceCollection:
 
     def _add_from_overloaded_constructor[TService](
         self,
+        lifetime: ServiceLifetime,
         service_type_or_implementation_factory: type[TService]
         | Callable[..., Awaitable[TService]]
         | Callable[..., TService],
@@ -200,7 +207,7 @@ class ServiceCollection:
             implementation_factory_to_add = service_type_or_implementation_factory
 
         self._add(
-            ServiceLifetime.TRANSIENT,
+            lifetime,
             service_type=service_type_to_add,
             implementation_factory=implementation_factory_to_add,
         )
