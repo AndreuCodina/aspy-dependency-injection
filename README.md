@@ -163,8 +163,8 @@ class UserService:
         self.notification_service = notification_service
 
     async def create_user(self, email: str) -> None:
-        await self.send_notification(email, "Welcome to our service!")
+        await self.notification_service.send_notification(email, "Welcome to our service!")
 
 
-services.add_transient(EmailServiceBase, SmtpEmailService)
+services.add_transient(NotificationService, EmailService)
 ```
