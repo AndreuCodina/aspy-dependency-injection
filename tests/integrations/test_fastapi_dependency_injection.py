@@ -60,3 +60,46 @@ class TestFastApi:
         response = test_client.get("/sync-endpoint")
 
         assert response.status_code == HTTPStatus.OK
+
+    def test_optional_dependency_returns_none_when_not_registered(self) -> None:
+        app = FastAPI()
+        router = APIRouter()
+
+        @router.get("/optional-dependency")
+        async def optional_dependency_endpoint(  # pyright: ignore[reportUnusedFunction]
+            service_with_no_dependencies: Annotated[
+                ServiceWithNoDependencies | None, Inject()
+            ],
+        ) -> None:
+            assert service_with_no_dependencies is None
+
+        app.include_router(router)
+        services = ServiceCollection()
+        services.configure_fastapi(app)
+
+        with TestClient(app) as test_client:
+            response = test_client.get("/optional-dependency")
+
+        assert response.status_code == HTTPStatus.OK
+
+    def test_optional_dependency_uses_default_value_when_not_registered(self) -> None:
+        app = FastAPI()
+        router = APIRouter()
+        default_dependency = ServiceWithNoDependencies()
+
+        @router.get("/optional-dependency-default")
+        async def optional_dependency_default_endpoint(  # pyright: ignore[reportUnusedFunction]
+            service_with_no_dependencies: Annotated[
+                ServiceWithNoDependencies | None, Inject()
+            ] = default_dependency,
+        ) -> None:
+            assert service_with_no_dependencies is default_dependency
+
+        app.include_router(router)
+        services = ServiceCollection()
+        services.configure_fastapi(app)
+
+        with TestClient(app) as test_client:
+            response = test_client.get("/optional-dependency-default")
+
+        assert response.status_code == HTTPStatus.OK

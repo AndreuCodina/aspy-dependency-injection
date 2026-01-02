@@ -19,6 +19,8 @@ from tests.utils.services import (
     ServiceWithGeneric,
     ServiceWithNoDependencies,
     ServiceWithSyncContextManagerAndNoDependencies,
+    ServiceWithOptionalDependency,
+    ServiceWithOptionalDependencyDefault,
 )
 
 if TYPE_CHECKING:
@@ -138,6 +140,48 @@ class TestServiceCollection:
 
             assert isinstance(resolved_service, ServiceWithNoDependencies)
 
+    async def test_resolve_service_with_optional_sync_factory_parameter(
+        self,
+    ) -> None:
+        def sync_implementation_factory(
+            optional_dependency: ServiceWithNoDependencies | None = None,
+        ) -> ServiceWithOptionalDependency:
+            return ServiceWithOptionalDependency(optional_dependency)
+
+        services = ServiceCollection()
+        services.add_transient(
+            ServiceWithOptionalDependency, sync_implementation_factory
+        )
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithOptionalDependency
+            )
+
+        assert resolved_service.optional_dependency is None
+
+    async def test_resolve_service_with_optional_async_factory_parameter_and_default(
+        self,
+    ) -> None:
+        default_dependency = ServiceWithNoDependencies()
+
+        async def async_implementation_factory(
+            optional_dependency: ServiceWithNoDependencies | None = default_dependency,
+        ) -> ServiceWithOptionalDependencyDefault:
+            return ServiceWithOptionalDependencyDefault(optional_dependency)
+
+        services = ServiceCollection()
+        services.add_transient(
+            ServiceWithOptionalDependencyDefault, async_implementation_factory
+        )
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithOptionalDependencyDefault
+            )
+
+        assert resolved_service.optional_dependency is default_dependency
+
     @pytest.mark.parametrize(
         argnames=("service_lifetime"),
         argvalues=[
@@ -171,6 +215,35 @@ class TestServiceCollection:
             assert isinstance(
                 resolved_service.service_with_no_dependencies, ServiceWithNoDependencies
             )
+
+    async def test_resolve_service_with_optional_dependency_not_registered(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithOptionalDependency)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithOptionalDependency
+            )
+
+        assert resolved_service.optional_dependency is None
+
+    async def test_resolve_service_with_optional_dependency_and_default_not_registered(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithOptionalDependencyDefault)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithOptionalDependencyDefault
+            )
+
+        assert (
+            resolved_service.optional_dependency
+            is ServiceWithOptionalDependencyDefault.DEFAULT_DEPENDENCY
+        )
 
     @pytest.mark.parametrize(
         argnames=("service_lifetime", "service_type"),

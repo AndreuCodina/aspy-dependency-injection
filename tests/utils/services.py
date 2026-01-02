@@ -109,3 +109,20 @@ class SelfCircularDependencyService:
 
 class ServiceWithGeneric[T]:
     pass
+
+
+class ServiceWithOptionalDependency:
+    def __init__(
+        self, optional_dependency: ServiceWithNoDependencies | None
+    ) -> None:
+        self.optional_dependency = optional_dependency
+
+
+class ServiceWithOptionalDependencyDefault:
+    DEFAULT_DEPENDENCY = ServiceWithNoDependencies()
+
+    def __init__(
+        self,
+        optional_dependency: ServiceWithNoDependencies | None = DEFAULT_DEPENDENCY,
+    ) -> None:
+        self.optional_dependency = optional_dependency

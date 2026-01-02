@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Flag
+from inspect import Parameter, signature
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -10,6 +11,9 @@ from typing import (
 
 from aspy_dependency_injection._aspy_undefined import AspyUndefined
 from aspy_dependency_injection._service_lookup._call_site_visitor import CallSiteVisitor
+from aspy_dependency_injection._service_lookup._optional_service import (
+    unwrap_optional_type,
+)
 from aspy_dependency_injection._service_lookup._supports_async_context_manager import (
     SupportsAsyncContextManager,
 )
@@ -26,6 +30,9 @@ if TYPE_CHECKING:
     )
     from aspy_dependency_injection._service_lookup._constructor_call_site import (
         ConstructorCallSite,
+    )
+    from aspy_dependency_injection._service_lookup._parameter_information import (
+        ParameterInformation,
     )
     from aspy_dependency_injection._service_lookup._service_call_site import (
         ServiceCallSite,
@@ -47,10 +54,22 @@ class _RuntimeResolverLock(Flag):
     ROOT = 2
 
 
+RETURN_TYPE_HINT_NAME = "return"
+
+
 @dataclass(frozen=True)
 class RuntimeResolverContext:
     scope: ServiceProviderEngineScope
     acquired_locks: _RuntimeResolverLock
+
+
+def _build_parameter_resolution_error(
+    parameter_information: "ParameterInformation", service_type: TypedType
+) -> RuntimeError:
+    return RuntimeError(
+        f"Unable to resolve service for type '{parameter_information.parameter_type}' "
+        f"while attempting to activate '{service_type}'."
+    )
 
 
 @final
@@ -163,10 +182,34 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         constructor_call_site: ConstructorCallSite,
         argument: RuntimeResolverContext,
     ) -> object:
-        parameter_values: list[object | None] = [
-            await self._visit_call_site(parameter_call_site, argument)
-            for parameter_call_site in constructor_call_site.parameter_call_sites
-        ]
+        parameter_values: list[object | None] = []
+
+        for parameter, parameter_call_site in zip(
+            constructor_call_site.parameters, constructor_call_site.parameter_call_sites
+        ):
+            if parameter_call_site is None:
+                if parameter.has_default:
+                    parameter_values.append(parameter.default_value)
+                    continue
+
+                if parameter.is_optional:
+                    parameter_values.append(None)
+                    continue
+
+                raise _build_parameter_resolution_error(
+                    parameter, constructor_call_site.service_type
+                )
+
+            parameter_service = await self._visit_call_site(
+                parameter_call_site, argument
+            )
+
+            if parameter_service is None and not parameter.is_optional:
+                raise _build_parameter_resolution_error(
+                    parameter, constructor_call_site.service_type
+                )
+
+            parameter_values.append(parameter_service)
         service = constructor_call_site.constructor_information.invoke(parameter_values)
 
         if isinstance(service, SupportsAsyncContextManager):
@@ -228,17 +271,39 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         | Callable[..., object],
         scope: ServiceProviderEngineScope,
     ) -> list[object | None]:
-        parameter_types = self._get_parameter_types(implementation_factory)
-        parameter_services: list[object] = []
+        parameter_services: list[object | None] = []
+        type_hints: dict[str, type] = get_type_hints(implementation_factory)
+        implementation_factory_signature = signature(implementation_factory)
 
-        for parameter_type in parameter_types:
+        for parameter_name, parameter in implementation_factory_signature.parameters.items():
+            if parameter_name == RETURN_TYPE_HINT_NAME:
+                continue
+
+            parameter_type = type_hints.get(parameter_name, parameter.annotation)
+
+            if parameter_type is Parameter.empty:
+                error_message = (
+                    f"The parameter '{parameter_name}' of the factory "
+                    f"'{implementation_factory}' must have a type annotation"
+                )
+                raise RuntimeError(error_message)
+
+            unwrapped_parameter_type, is_optional = unwrap_optional_type(parameter_type)
             parameter_service = await scope.get_service_object(
-                TypedType.from_type(parameter_type)
+                TypedType.from_type(unwrapped_parameter_type)
             )
 
             if parameter_service is None:
+                if is_optional and parameter.default is not Parameter.empty:
+                    parameter_services.append(parameter.default)
+                    continue
+
+                if is_optional:
+                    parameter_services.append(None)
+                    continue
+
                 error_message = (
-                    f"Unable to resolve service for type '{parameter_type}' "
+                    f"Unable to resolve service for type '{unwrapped_parameter_type}' "
                     f"while attempting to invoke implementation factory "
                     f"'{implementation_factory}'."
                 )
@@ -247,18 +312,6 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
             parameter_services.append(parameter_service)
 
         return parameter_services
-
-    def _get_parameter_types(
-        self,
-        implementation_factory: Callable[..., Awaitable[object]]
-        | Callable[..., object],
-    ) -> list[type]:
-        type_hints: dict[str, type] = get_type_hints(implementation_factory)
-        return [
-            parameter_type
-            for parameter_name, parameter_type in type_hints.items()
-            if parameter_name != "return"
-        ]
 
 
 CallSiteRuntimeResolver.INSTANCE = CallSiteRuntimeResolver()
