@@ -63,15 +63,6 @@ class RuntimeResolverContext:
     acquired_locks: _RuntimeResolverLock
 
 
-def _build_parameter_resolution_error(
-    parameter_information: "ParameterInformation", service_type: TypedType
-) -> RuntimeError:
-    return RuntimeError(
-        f"Unable to resolve service for type '{parameter_information.parameter_type}' "
-        f"while attempting to activate '{service_type}'."
-    )
-
-
 @final
 class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | None]):
     INSTANCE: ClassVar[CallSiteRuntimeResolver]
@@ -196,7 +187,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
                     parameter_values.append(None)
                     continue
 
-                raise _build_parameter_resolution_error(
+                raise self._build_parameter_resolution_error(
                     parameter, constructor_call_site.service_type
                 )
 
@@ -205,7 +196,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
             )
 
             if parameter_service is None and not parameter.is_optional:
-                raise _build_parameter_resolution_error(
+                raise self._build_parameter_resolution_error(
                     parameter, constructor_call_site.service_type
                 )
 
@@ -264,6 +255,14 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         argument: RuntimeResolverContext,
     ) -> object | None:
         return argument.scope
+
+    def _build_parameter_resolution_error(
+        self, parameter_information: "ParameterInformation", service_type: TypedType
+    ) -> RuntimeError:
+        return RuntimeError(
+            f"Unable to resolve service for type '{parameter_information.parameter_type}' "
+            f"while attempting to activate '{service_type}'."
+        )
 
     async def get_parameter_services(
         self,
