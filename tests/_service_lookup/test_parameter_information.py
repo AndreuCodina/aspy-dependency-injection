@@ -29,7 +29,7 @@ class TestParameterInformation:
             ("string_and_default_to_value", False, True, "default"),
         ],
     )
-    def test_resolve_service_with_no_dependencies(
+    def test_get_parameter_information(
         self,
         parameter_name: str,
         expected_is_optional: bool,

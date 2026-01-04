@@ -297,7 +297,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         self, parameter_information: ParameterInformation, service_type: TypedType
     ) -> RuntimeError:
         return RuntimeError(
-            f"Unable to resolve service with type '{parameter_information.parameter_type}' while attempting to activate '{service_type}'."
+            f"Unable to resolve service with type '{parameter_information.parameter_type}' while attempting to activate '{service_type}'"
         )
 
 
