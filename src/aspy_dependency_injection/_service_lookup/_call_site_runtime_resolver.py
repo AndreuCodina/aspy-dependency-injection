@@ -1,22 +1,25 @@
+import inspect
+import typing
 from dataclasses import dataclass
 from enum import Flag
 from typing import (
     TYPE_CHECKING,
     ClassVar,
     final,
-    get_type_hints,
     override,
 )
 
 from aspy_dependency_injection._aspy_undefined import AspyUndefined
 from aspy_dependency_injection._service_lookup._call_site_visitor import CallSiteVisitor
+from aspy_dependency_injection._service_lookup._parameter_information import (
+    ParameterInformation,
+)
 from aspy_dependency_injection._service_lookup._supports_async_context_manager import (
     SupportsAsyncContextManager,
 )
 from aspy_dependency_injection._service_lookup._supports_context_manager import (
     SupportsContextManager,
 )
-from aspy_dependency_injection._service_lookup._typed_type import TypedType
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -228,21 +231,22 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         | Callable[..., object],
         scope: ServiceProviderEngineScope,
     ) -> list[object | None]:
-        parameter_types = self._get_parameter_types(implementation_factory)
-        parameter_services: list[object] = []
+        parameter_services: list[object | None] = []
+        signature = inspect.signature(implementation_factory)
 
-        for parameter_type in parameter_types:
+        for parameter in signature.parameters.values():
+            parameter_information = ParameterInformation(parameter)
             parameter_service = await scope.get_service_object(
-                TypedType.from_type(parameter_type)
+                parameter_information.parameter_type
             )
 
             if parameter_service is None:
-                error_message = (
-                    f"Unable to resolve service for type '{parameter_type}' "
-                    f"while attempting to invoke implementation factory "
-                    f"'{implementation_factory}'."
-                )
-                raise RuntimeError(error_message)
+                if parameter_information.has_default_value:
+                    parameter_services.append(parameter_information.default_value)
+
+                if not parameter_information.is_optional:
+                    error_message = "Unable to resolve service for type '{parameter_information.parameter_type}'"
+                    raise RuntimeError(error_message)
 
             parameter_services.append(parameter_service)
 
@@ -253,7 +257,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
         implementation_factory: Callable[..., Awaitable[object]]
         | Callable[..., object],
     ) -> list[type]:
-        type_hints: dict[str, type] = get_type_hints(implementation_factory)
+        type_hints: dict[str, type] = typing.get_type_hints(implementation_factory)
         return [
             parameter_type
             for parameter_name, parameter_type in type_hints.items()
