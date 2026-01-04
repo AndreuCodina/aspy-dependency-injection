@@ -271,12 +271,13 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
             if parameter_service is None:
                 if parameter_information.has_default_value:
                     parameter_services.append(parameter_information.default_value)
-
-                if not parameter_information.is_optional:
+                elif parameter_information.is_optional:
+                    parameter_services.append(None)
+                else:
                     error_message = "Unable to resolve service for type '{parameter_information.parameter_type}'"
                     raise RuntimeError(error_message)
-
-            parameter_services.append(parameter_service)
+            else:
+                parameter_services.append(parameter_service)
 
         return parameter_services
 
