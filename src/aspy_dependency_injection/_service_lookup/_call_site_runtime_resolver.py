@@ -274,7 +274,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
                 elif parameter_information.is_optional:
                     parameter_services.append(None)
                 else:
-                    error_message = "Unable to resolve service for type '{parameter_information.parameter_type}'"
+                    error_message = f"Unable to resolve service for type '{parameter_information.parameter_type}'"
                     raise RuntimeError(error_message)
             else:
                 parameter_services.append(parameter_service)

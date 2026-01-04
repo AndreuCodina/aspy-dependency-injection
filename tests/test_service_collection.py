@@ -823,6 +823,41 @@ class TestServiceCollection:
         self, is_async_implementation_factory: bool
     ) -> None:
         async def async_implementation_factory(
+            optional_dependency: ServiceWithNoDependencies | None,
+        ) -> ServiceWithOptionalDependency:
+            return ServiceWithOptionalDependency(optional_dependency)
+
+        def sync_implementation_factory(
+            optional_dependency: ServiceWithNoDependencies | None,
+        ) -> ServiceWithOptionalDependency:
+            return ServiceWithOptionalDependency(optional_dependency)
+
+        services = ServiceCollection()
+        services.add_transient(
+            ServiceWithOptionalDependency,
+            async_implementation_factory
+            if is_async_implementation_factory
+            else sync_implementation_factory,
+        )
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithOptionalDependency
+            )
+
+        assert resolved_service.optional_dependency is None
+
+    @pytest.mark.parametrize(
+        argnames="is_async_implementation_factory",
+        argvalues=[
+            True,
+            False,
+        ],
+    )
+    async def test_resolve_service_with_optional_implementation_and_default_value_factory_parameter(
+        self, is_async_implementation_factory: bool
+    ) -> None:
+        async def async_implementation_factory(
             optional_dependency: ServiceWithNoDependencies | None = None,
         ) -> ServiceWithOptionalDependency:
             return ServiceWithOptionalDependency(optional_dependency)
@@ -875,3 +910,22 @@ class TestServiceCollection:
             resolved_service.optional_dependency
             is ServiceWithOptionalDependencyWithDefault.DEFAULT_DEPENDENCY
         )
+
+    async def test_fail_when_resolve_non_optional_service_parameter(
+        self,
+    ) -> None:
+        class Service:
+            def __init__(self, service: str) -> None:
+                self.service = service
+
+        services = ServiceCollection()
+        services.add_transient(Service)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(RuntimeError) as exception_info:
+                await service_provider.get_required_service(Service)
+
+            assert (
+                str(exception_info.value)
+                == "Unable to resolve service with type 'builtins.str' while attempting to activate a service"
+            )

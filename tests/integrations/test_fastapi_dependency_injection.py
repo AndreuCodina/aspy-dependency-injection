@@ -80,7 +80,7 @@ class TestFastApi:
 
         assert response.status_code == HTTPStatus.OK
 
-    async def test_fail_when_not_optional_dependency_is_missing(self) -> None:
+    async def test_fail_when_non_optional_dependency_is_missing(self) -> None:
         app = FastAPI()
 
         @app.get("/non-optional-dependency")

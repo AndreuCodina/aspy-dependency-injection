@@ -234,13 +234,14 @@ class CallSiteFactory:
                 call_site_chain,
             )
 
-            if call_site is None and (
-                parameter.is_optional or parameter.has_default_value
-            ):
-                parameter_call_sites.append(None)
-                continue
+            if call_site is None:
+                if parameter.is_optional or parameter.has_default_value:
+                    parameter_call_sites.append(None)
+                    continue
 
-            assert call_site is not None
+                error_message = f"Unable to resolve service with type '{parameter.parameter_type}' while attempting to activate a service"
+                raise RuntimeError(error_message)
+
             parameter_call_sites.append(call_site)
 
         return parameter_call_sites
