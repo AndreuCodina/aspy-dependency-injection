@@ -28,13 +28,13 @@ Imagine you have a service `EmailService` that sends real emails. During testing
 @pytest.fixture
 async def service_provider(mocker: MockerFixture) -> AsyncGenerator[ServiceProvider]:
     email_service_mock = mocker.create_autospec(EmailService, instance=True)
-    services.add_singleton(EmailService, MockEmailService)
+    services.add_singleton(EmailService, email_service_mock)
 
     async with services.build_service_provider() as service_provider:
         yield service_provider
 ```
 
-Remember that if `EmailService` is already registered in `services`, adding it again with will override the previous registration.
+Remember that if `EmailService` is already registered in `services`, adding it again will override the previous registration.
 Now, when you resolve `EmailService` in your tests, you'll get the mock implementation instead of the real one.
 
 ## Override a service per test
@@ -72,7 +72,7 @@ def services() -> ServiceCollection:
 @pytest.fixture
 async def service_provider(services: ServiceCollection, mocker: MockerFixture) -> AsyncGenerator[ServiceProvider]:
     email_service_mock = mocker.create_autospec(EmailService, instance=True)
-    services.add_singleton(EmailService, MockEmailService)
+    services.add_singleton(EmailService, email_service_mock)
 
     async with services.build_service_provider() as service_provider:
         yield service_provider
