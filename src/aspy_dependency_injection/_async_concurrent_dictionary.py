@@ -1,8 +1,6 @@
 import asyncio
-from typing import TYPE_CHECKING, Final
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Final
 
 
 class AsyncConcurrentDictionary[TKey, TValue]:

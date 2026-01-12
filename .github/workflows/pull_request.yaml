@@ -39,7 +39,7 @@ jobs:
       contents: write # Allow Coveralls to comment on the PR
     strategy:
       matrix:
-        python-version: ["3.14"]
+        python-version: ["3.13", "3.14"]
         resolution-strategy: ["lowest-direct", "highest"]
     env:
       CI: true # Enable pytest CI mode
