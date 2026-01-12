@@ -13,19 +13,17 @@
 You, or the own libraries you use, can provide functions that accept a `ServiceCollection` and register the required services. For example, a logging package might expose an `add_logging` function, providing good defaults and injectable services:
 
 ```python
-def add_logging(services: ServiceCollection) -> ServiceCollection:
-	services.add_singleton(LoggerFactory, DefaultLoggerFactory)
-	services.add_transient(Logger)
-	return services
+def add_logging(services: ServiceCollection) -> None:
+    services.add_singleton(LoggerFactory, DefaultLoggerFactory)
+    services.add_transient(Logger)
 ```
 
 Similarly, an observability package could offer an `add_observability` function:
 
 ```python
-def add_observability(services: ServiceCollection) -> ServiceCollection:
-	services.add_singleton(MetricsClient, PrometheusMetricsClient)
-	services.add_singleton(Tracer, OtelTracer)
-	return services
+def add_observability(services: ServiceCollection) -> None:
+    services.add_singleton(MetricsClient, PrometheusMetricsClient)
+    services.add_singleton(Tracer, OtelTracer)
 ```
 
 A database integration package might provide an `add_sqlmodel` function that sets up SQLModel, so all the typical boilerplate is handled for you with just a single line of code:
