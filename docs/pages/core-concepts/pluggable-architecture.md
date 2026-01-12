@@ -31,14 +31,6 @@ def add_observability(services: ServiceCollection) -> ServiceCollection:
 A database integration package might provide an `add_sqlmodel` function that sets up SQLModel, so all the typical boilerplate is handled for you with just a single line of code:
 
 ```python
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from aspy_dependency_injection.service_collection import ServiceCollection
-
-services = ServiceCollection()
-
-
 def add_sqlmodel(services: ServiceCollection, connection_string: str) -> None:
     def inject_async_engine() -> AsyncEngine:
         return create_async_engine(connection_string)
