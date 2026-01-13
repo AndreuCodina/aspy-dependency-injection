@@ -1,6 +1,6 @@
 import asyncio
 from types import TracebackType
-from typing import TYPE_CHECKING, Final, Self, cast, final, override
+from typing import TYPE_CHECKING, Final, Self, final, override
 
 from aspy_dependency_injection._service_lookup._service_identifier import (
     ServiceIdentifier,
@@ -73,8 +73,8 @@ class ServiceProviderEngineScope(
 
     @property
     @override
-    def service_provider(self) -> "ServiceProvider":
-        return cast("ServiceProvider", self)
+    def service_provider(self) -> BaseServiceProvider:
+        return self
 
     @override
     def create_scope(self) -> ServiceScope:
