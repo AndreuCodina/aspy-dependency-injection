@@ -16,9 +16,6 @@ from starlette.websockets import WebSocket
 from aspy_dependency_injection._service_lookup._parameter_information import (
     ParameterInformation,
 )
-from aspy_dependency_injection.abstractions.base_service_provider import (
-    BaseServiceProvider,
-)
 from aspy_dependency_injection.injectable import Injectable
 from aspy_dependency_injection.service_provider import (
     ServiceProvider,
@@ -28,6 +25,9 @@ from aspy_dependency_injection.service_provider import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from aspy_dependency_injection.abstractions.base_service_provider import (
+        BaseServiceProvider,
+    )
     from aspy_dependency_injection.service_collection import ServiceCollection
 
 
@@ -158,7 +158,7 @@ class FastApiDependencyInjection:
     async def _resolve_injected_parameter(
         cls, parameter_information: ParameterInformation
     ) -> object | None:
-        scoped_provider = cast(BaseServiceProvider, cls._get_request_container())
+        scoped_provider = cast("BaseServiceProvider", cls._get_request_container())
         parameter_service = await scoped_provider.get_service_object(
             parameter_information.parameter_type
         )
