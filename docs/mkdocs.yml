@@ -59,6 +59,7 @@ nav:
   - Core concepts:
       - Service lifetimes: core-concepts/lifetimes.md
       - Factories: core-concepts/factories.md
+      - Async-first design: core-concepts/async-first-design.md
       - Pluggable architecture: core-concepts/pluggable-architecture.md
       - Interfaces & abstract classes: core-concepts/interfaces-and-abstract-classes.md
   - Testing: testing.md
@@ -67,5 +68,6 @@ nav:
       - BaseServiceProvider: api-reference/base-service-provider.md
       - ServiceProvider: api-reference/service-provider.md
       - ServiceScope: api-reference/service-scope.md
+      - Exceptions: api-reference/exceptions.md
   - Other:
       - Changelogs: other/changelogs.md

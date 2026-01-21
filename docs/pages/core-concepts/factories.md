@@ -1,6 +1,6 @@
 # Factories
 
-Sometimes, you need to use a factory function to create a service. For example, you have settings (a connection string, database name, etc.) stored using the package `pydantic-settings` and you want to provide them to a service `DatabaseClient` to access a database.
+Sometimes, we need to use a factory function to create a service. For example, we have settings (a connection string, database name, etc.) stored using the package `pydantic-settings` and we want to provide them to a service `DatabaseClient` to access a database.
 
 ```python
 class ApplicationSettings(BaseSettings):
@@ -12,14 +12,14 @@ class DatabaseClient:
         pass
 ```
 
-In a real `DatabaseClient` implementation, you must use a sync or async context manager, i.e., you instance it with:
+In a real `DatabaseClient` implementation, we must use a sync or async context manager, i.e., we instance it with:
 
 ```python
 async with DatabaseClient(database_connection_string) as client:
     ...
 ```
 
-And, if you want to reuse it, you create a factory function with yield:
+And, if we want to reuse it, we create a factory function with yield:
 
 ```python
 async def create_database_client(application_settings: ApplicationSettings) -> AsyncGenerator[DatabaseClient]:
@@ -27,9 +27,9 @@ async def create_database_client(application_settings: ApplicationSettings) -> A
         yield database_client
 ```
 
-With that factory, you have to provide manually a singleton of `ApplicationSettings`, and to know if `DatabaseClient` implements a sync or async context manager, or neither. Apart from that, if you need a singleton or scoped instance of `DatabaseClient`, it's very complex to manage the disposal of the instance.
+With that factory, we have to provide manually a singleton of `ApplicationSettings`, and to know if `DatabaseClient` implements a sync or async context manager, or neither. Apart from that, if we need a singleton or scoped instance of `DatabaseClient`, it's very complex to manage the disposal of the instance.
 
-Then, why don't just return it? With this package, you just have this:
+Then, why don't just return it? With this package, we just have this:
 
 ```python
 def inject_database_client(application_settings: ApplicationSettings) -> DatabaseClient:

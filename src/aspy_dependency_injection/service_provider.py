@@ -90,6 +90,20 @@ class ServiceProvider(
             service_provider_engine_scope=self._root,
         )
 
+    @override
+    async def get_keyed_service_object(
+        self, service_key: object | None, service_type: TypedType
+    ) -> object | None:
+        if self._is_disposed:
+            raise ObjectDisposedError
+
+        return await self.get_service_from_service_identifier(
+            service_identifier=ServiceIdentifier.from_service_type(
+                service_type=service_type, service_key=service_key
+            ),
+            service_provider_engine_scope=self._root,
+        )
+
     def create_scope(self) -> ServiceScope:
         """Create a new :class:`ServiceScope` that can be used to resolve scoped services."""
         if self._is_disposed:

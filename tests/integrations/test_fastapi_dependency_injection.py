@@ -6,7 +6,7 @@ import pytest
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from aspy_dependency_injection.annotations import Inject
+from aspy_dependency_injection.annotations import FromServices
 from aspy_dependency_injection.service_collection import ServiceCollection
 from tests.utils.services import ServiceWithNoDependencies
 
@@ -18,14 +18,8 @@ def app() -> FastAPI:
 
     @router.get("/service-with-no-dependencies")
     async def service_with_no_dependencies_endpoint(  # pyright: ignore[reportUnusedFunction]
-        service_with_no_dependencies: Annotated[ServiceWithNoDependencies, Inject()],
-    ) -> None:
-        assert isinstance(service_with_no_dependencies, ServiceWithNoDependencies)
-
-    @router.get("/optional-service-with-no-dependencies")
-    async def optional_service_with_no_dependencies_endpoint(  # pyright: ignore[reportUnusedFunction]
         service_with_no_dependencies: Annotated[
-            ServiceWithNoDependencies | None, Inject()
+            ServiceWithNoDependencies, FromServices()
         ],
     ) -> None:
         assert isinstance(service_with_no_dependencies, ServiceWithNoDependencies)
@@ -105,13 +99,33 @@ class TestFastApi:
 
         assert response.status_code == HTTPStatus.OK
 
-    def test_optional_dependency_returns_none_when_not_registered(self) -> None:
+    def test_return_service_when_optional_dependency_is_registered(self) -> None:
         app = FastAPI()
 
         @app.get("/optional-dependency")
         async def optional_dependency_endpoint(  # pyright: ignore[reportUnusedFunction]
             service_with_no_dependencies: Annotated[
-                ServiceWithNoDependencies | None, Inject()
+                ServiceWithNoDependencies | None, FromServices()
+            ],
+        ) -> None:
+            assert isinstance(service_with_no_dependencies, ServiceWithNoDependencies)
+
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+        services.configure_fastapi(app)
+
+        with TestClient(app) as test_client:
+            response = test_client.get("/optional-dependency")
+
+        assert response.status_code == HTTPStatus.OK
+
+    def test_return_service_when_optional_dependency_is_not_registered(self) -> None:
+        app = FastAPI()
+
+        @app.get("/optional-dependency")
+        async def optional_dependency_endpoint(  # pyright: ignore[reportUnusedFunction]
+            service_with_no_dependencies: Annotated[
+                ServiceWithNoDependencies | None, FromServices()
             ],
         ) -> None:
             assert service_with_no_dependencies is None
@@ -131,7 +145,7 @@ class TestFastApi:
         @app.get("/non-optional-dependency")
         async def non_optional_dependency_endpoint(  # pyright: ignore[reportUnusedFunction]
             service_with_no_dependencies: Annotated[
-                ServiceWithNoDependencies, Inject()
+                ServiceWithNoDependencies, FromServices()
             ],
         ) -> None:
             pass
@@ -159,7 +173,7 @@ class TestFastApi:
         async def fastapi_depends_endpoint(  # pyright: ignore[reportUnusedFunction]
             request_parameter: str,
             fastapi_depends: Annotated[str, Depends(test_dependency)],
-            aspy_inject: Annotated[str, Inject()],
+            aspy_inject: Annotated[str, FromServices()],
         ) -> None:
             assert request_parameter == expected_request_parameter
             assert fastapi_depends == expected_fastapi_depends

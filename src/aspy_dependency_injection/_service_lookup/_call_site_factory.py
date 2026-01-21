@@ -32,6 +32,19 @@ from aspy_dependency_injection._service_lookup._sync_factory_call_site import (
 )
 from aspy_dependency_injection._service_lookup._typed_type import TypedType
 from aspy_dependency_injection._service_lookup.service_cache_key import ServiceCacheKey
+from aspy_dependency_injection.abstractions.keyed_service import KeyedService
+from aspy_dependency_injection.abstractions.service_key_lookup_mode import (
+    ServiceKeyLookupMode,
+)
+from aspy_dependency_injection.annotations import (
+    FromKeyedServicesInjectable,
+    ServiceKeyInjectable,
+)
+from aspy_dependency_injection.exceptions import (
+    CannotResolveServiceError,
+    InvalidServiceDescriptorError,
+    InvalidServiceKeyTypeError,
+)
 from aspy_dependency_injection.service_descriptor import ServiceDescriptor
 
 if TYPE_CHECKING:
@@ -159,6 +172,24 @@ class CallSiteFactory:
                 self._DEFAULT_SLOT,
             )
 
+        if service_identifier.service_key is not None:
+            catch_all_identifier = ServiceIdentifier(
+                service_type=service_identifier.service_type,
+                service_key=KeyedService.ANY_KEY,
+            )
+
+            service_descriptor_cache_item = self._descriptor_lookup.get(
+                catch_all_identifier, None
+            )
+
+            if service_descriptor_cache_item is not None:
+                return await self._try_create_exact_from_service_descriptor(
+                    service_descriptor_cache_item.last,
+                    service_identifier,
+                    call_site_chain,
+                    self._DEFAULT_SLOT,
+                )
+
         return None
 
     async def _try_create_exact_from_service_descriptor(
@@ -199,36 +230,65 @@ class CallSiteFactory:
             service_descriptor.lifetime, service_identifier, slot
         )
 
-        if service_descriptor.implementation_instance is not None:
+        if service_descriptor.has_implementation_instance():
             service_call_site = ConstantCallSite(
                 service_type=service_descriptor.service_type,
-                default_value=service_descriptor.implementation_instance,
+                default_value=service_descriptor.get_implementation_instance(),
+                service_key=service_descriptor.service_key,
             )
-        elif service_descriptor.sync_implementation_factory is not None:
+        elif (
+            not service_descriptor.is_keyed_service
+            and service_descriptor.sync_implementation_factory is not None
+        ):
             assert service_descriptor.sync_implementation_factory is not None
             service_call_site = SyncFactoryCallSite(
                 cache=cache,
                 service_type=service_descriptor.service_type,
                 implementation_factory=service_descriptor.sync_implementation_factory,
             )
-        elif service_descriptor.async_implementation_factory is not None:
+        elif (
+            service_descriptor.is_keyed_service
+            and service_descriptor.keyed_sync_implementation_factory is not None
+        ):
+            assert service_descriptor.sync_implementation_factory is not None
+            service_call_site = SyncFactoryCallSite(
+                cache=cache,
+                service_type=service_descriptor.service_type,
+                implementation_factory=service_descriptor.sync_implementation_factory,
+                service_key=service_descriptor.service_key,
+            )
+        elif (
+            not service_descriptor.is_keyed_service
+            and service_descriptor.async_implementation_factory is not None
+        ):
             assert service_descriptor.async_implementation_factory is not None
             service_call_site = AsyncFactoryCallSite(
                 cache=cache,
                 service_type=service_descriptor.service_type,
                 implementation_factory=service_descriptor.async_implementation_factory,
             )
+        elif (
+            service_descriptor.is_keyed_service
+            and service_descriptor.async_implementation_factory is not None
+        ):
+            assert service_descriptor.async_implementation_factory is not None
+            service_call_site = AsyncFactoryCallSite(
+                cache=cache,
+                service_type=service_descriptor.service_type,
+                implementation_factory=service_descriptor.async_implementation_factory,
+                service_key=service_descriptor.service_key,
+            )
         elif service_descriptor.has_implementation_type():
-            assert service_descriptor.implementation_type is not None
+            implementation_type = service_descriptor.get_implementation_type()
+            assert implementation_type is not None
             service_call_site = await self._create_constructor_call_site(
                 cache=cache,
                 service_identifier=service_identifier,
-                implementation_type=service_descriptor.implementation_type,
+                implementation_type=implementation_type,
                 call_site_chain=call_site_chain,
             )
         else:
-            error_message = "Invalid service descriptor"
-            raise RuntimeError(error_message)
+            raise InvalidServiceDescriptorError
 
         await self._call_site_cache.upsert(key=call_site_key, value=service_call_site)
         return service_call_site
@@ -246,7 +306,10 @@ class CallSiteFactory:
             constructor_information = ConstructorInformation(implementation_type)
             parameters = constructor_information.get_parameters()
             parameter_call_sites = await self._create_argument_call_sites(
-                parameters, call_site_chain
+                service_identifier=service_identifier,
+                implementation_type=implementation_type,
+                parameters=parameters,
+                call_site_chain=call_site_chain,
             )
             return ConstructorCallSite(
                 cache=cache,
@@ -254,12 +317,17 @@ class CallSiteFactory:
                 constructor_information=constructor_information,
                 parameters=parameters,
                 parameter_call_sites=parameter_call_sites,
+                service_key=service_identifier.service_key,
             )
         finally:
             call_site_chain.remove(service_identifier)
 
-    async def _create_argument_call_sites(
-        self, parameters: list[ParameterInformation], call_site_chain: CallSiteChain
+    async def _create_argument_call_sites(  # noqa: C901, PLR0912
+        self,
+        service_identifier: ServiceIdentifier,
+        implementation_type: TypedType,
+        parameters: list[ParameterInformation],
+        call_site_chain: CallSiteChain,
     ) -> list[ServiceCallSite | None]:
         if len(parameters) == 0:
             return []
@@ -267,18 +335,73 @@ class CallSiteFactory:
         parameter_call_sites: list[ServiceCallSite | None] = []
 
         for parameter in parameters:
-            call_site = await self._create_call_site(
-                ServiceIdentifier.from_service_type(parameter.parameter_type),
-                call_site_chain,
-            )
+            call_site: ServiceCallSite | None = None
+            is_keyed_parameter = False
+            parameter_type = parameter.parameter_type
 
-            if call_site is None:
-                if parameter.is_optional or parameter.has_default_value:
+            if parameter.injectable_dependency is not None:
+                if service_identifier.service_key is not None and isinstance(
+                    parameter.injectable_dependency, ServiceKeyInjectable
+                ):
+                    # Even though the parameter may be strongly typed, support `object` if `ANY_KEY`` is used
+
+                    if service_identifier.service_key == KeyedService.ANY_KEY:
+                        parameter_type = TypedType.from_type(object)
+                    elif parameter_type is type(
+                        service_identifier.service_key
+                    ) and parameter_type is not type(object):
+                        raise InvalidServiceKeyTypeError
+
+                    call_site = ConstantCallSite(
+                        service_type=parameter_type,
+                        default_value=service_identifier.service_key,
+                    )
+                elif isinstance(
+                    parameter.injectable_dependency, FromKeyedServicesInjectable
+                ):
+                    service_key: object | None = None
+
+                    match parameter.injectable_dependency.lookup_mode:
+                        case ServiceKeyLookupMode.INHERIT_KEY:
+                            service_key = service_identifier.service_key
+                        case ServiceKeyLookupMode.EXPLICIT_KEY:
+                            service_key = parameter.injectable_dependency.key
+                        case ServiceKeyLookupMode.NULL_KEY:
+                            service_key = None
+
+                    if service_key is not None:
+                        call_site = await self.get_call_site(
+                            ServiceIdentifier.from_service_type(
+                                service_type=parameter_type, service_key=service_key
+                            ),
+                            call_site_chain=call_site_chain,
+                        )
+                        is_keyed_parameter = True
+
+            if not is_keyed_parameter and call_site is None:
+                call_site = await self.get_call_site(
+                    ServiceIdentifier.from_service_type(parameter_type), call_site_chain
+                )
+
+            if call_site is None and parameter.has_default_value:
+                if parameter.is_optional:
                     parameter_call_sites.append(None)
                     continue
 
-                error_message = f"Unable to resolve service with type '{parameter.parameter_type}' while attempting to activate a service"
-                raise RuntimeError(error_message)
+                call_site = ConstantCallSite(
+                    service_type=parameter_type,
+                    default_value=parameter.default_value,
+                )
+
+            if call_site is None and parameter.is_optional:
+                parameter_call_sites.append(None)
+                continue
+
+            if call_site is None:
+                raise CannotResolveServiceError(
+                    parameter_type=parameter_type,
+                    implementation_type=implementation_type,
+                )
 
             parameter_call_sites.append(call_site)
 

@@ -2,7 +2,7 @@
 
 ## Quickstart
 
-You can create a fixture in `conftest.py` that provides a `ServiceProvider` instance:
+We can create a fixture in `conftest.py` that provides a `ServiceProvider` instance:
 
 ```python
 @pytest.fixture
@@ -11,7 +11,7 @@ async def service_provider() -> AsyncGenerator[ServiceProvider]:
         yield service_provider
 ```
 
-And then you can inject it into your tests and resolve the services.
+And then we can inject it into our tests and resolve the services.
 
 ```python
 async def test_create_user(service_provider: ServiceProvider) -> None:
@@ -22,7 +22,7 @@ async def test_create_user(service_provider: ServiceProvider) -> None:
 
 ## Globally override a service
 
-Imagine you have a service `EmailService` that sends real emails. During testing, you want to replace it with a mock implementation that doesn't send real emails.
+Imagine we have a service `EmailService` that sends real emails. During testing, we want to replace it with a mock implementation that doesn't send real emails.
 
 ```python
 @pytest.fixture
@@ -35,11 +35,11 @@ async def service_provider(mocker: MockerFixture) -> AsyncGenerator[ServiceProvi
 ```
 
 Remember that if `EmailService` is already registered in `services`, adding it again will override the previous registration.
-Now, when you resolve `EmailService` in your tests, you'll get the mock implementation instead of the real one.
+Now, when we resolve `EmailService` in our tests, we'll get the mock implementation instead of the real one.
 
 ## Override a service per test
 
-You can also override a service for a specific test case. This is useful when you want to test different behaviors of a service.
+We can also override a service for a specific test case. This is useful when we want to test different behaviors of a service.
 
 ```python
 async def test_create_user(
@@ -53,7 +53,7 @@ async def test_create_user(
     await user_service.create_user()
 ```
 
-But given `services` is a singleton declared in `main.py`, you should instead create in `main.py` the function `configure_services` that returns a new `ServiceCollection` each time you call it, so that each test can call it to get a fresh `ServiceCollection` instance.
+But given `services` is a singleton declared in `main.py`, we should instead create in `main.py` the function `configure_services` that returns a new `ServiceCollection` each time we call it, so that each test can call it to get a fresh `ServiceCollection` instance.
 
 ```python
 def configure_services() -> ServiceCollection:

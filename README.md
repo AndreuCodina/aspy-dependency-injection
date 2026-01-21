@@ -25,7 +25,7 @@ uv add aspy-dependency-injection
 
 ## ✨ Quickstart with FastAPI
 
-Inject services into async endpoints using `Annotated[..., Inject()]`.
+Inject services into async endpoints using `Annotated[..., FromServices()]`.
 
 ```python
 class EmailService:
@@ -35,16 +35,13 @@ class EmailService:
 class UserService:
     def __init__(self, email_service: EmailService) -> None:
         self.email_service = email_service
-    
-    async def create_user(self) -> None:
-        pass
 
 
 app = FastAPI()
 
 @app.post("/users")
-async def create_user(user_service: Annotated[UserService, Inject()]) -> None:
-    await user_service.create_user()
+async def create_user(user_service: Annotated[UserService, FromServices()]) -> None:
+    ...
 
 services = ServiceCollection()
 services.add_transient(EmailService)
@@ -65,22 +62,13 @@ class UserService:
     def __init__(self, email_service: EmailService) -> None:
         self.email_service = email_service
     
-    async def create_user(self) -> None:
-        pass
-
     
 services = ServiceCollection()
 services.add_transient(EmailService)
 services.add_transient(UserService)
 
-async def main() -> None:
-    async with services.build_service_provider() as service_provider:
-        user_service = await service_provider.get_required_service(UserService)
-        await user_service.create_user()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+async with services.build_service_provider() as service_provider:
+    user_service = await service_provider.get_required_service(UserService)
 ```
 
 If you want a scope per operation (e.g., per HTTP request or message from a queue), you can create a scope from the service provider:
@@ -88,7 +76,6 @@ If you want a scope per operation (e.g., per HTTP request or message from a queu
 ```python
 async with service_provider.create_scope() as service_scope:
     user_service = await service_scope.get_required_service(UserService)
-    await user_service.create_user()
 ```
 
 ## 🔄 Lifetimes
@@ -165,6 +152,7 @@ You can register a service by specifying both the service type (interface / abst
 
 ```python
 class NotificationService(ABC):
+    @abstractmethod
     async def send_notification(self, recipient: str, message: str) -> None:
         ...
 

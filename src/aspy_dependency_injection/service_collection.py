@@ -217,6 +217,229 @@ class ServiceCollection:
             implementation_factory_or_implementation_type_or_implementation_instance_none=implementation_factory_or_implementation_type_or_none,
         )
 
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_type: type,
+        /,
+    ) -> None: ...
+
+    def add_keyed_transient[TService](
+        self,
+        service_key: object | None,
+        service_type_or_implementation_factory: type[TService]
+        | Callable[..., Awaitable[TService]]
+        | Callable[..., TService],
+        implementation_factory_or_implementation_type_or_none: Callable[
+            ..., Awaitable[TService]
+        ]
+        | Callable[..., TService]
+        | type
+        | None = None,
+        /,
+    ) -> None:
+        """Add a keyed transient service."""
+        self._add_from_overloaded_constructor(
+            lifetime=ServiceLifetime.TRANSIENT,
+            service_type_or_implementation_factory=service_type_or_implementation_factory,
+            implementation_factory_or_implementation_type_or_implementation_instance_none=implementation_factory_or_implementation_type_or_none,
+            service_key=service_key,
+        )
+
+    @overload
+    def add_keyed_singleton[TService](
+        self, service_key: object | None, service_type: type[TService], /
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_type: type,
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_instance: object,
+        /,
+    ) -> None: ...
+
+    def add_keyed_singleton[TService](
+        self,
+        service_key: object | None,
+        service_type_or_implementation_factory: type[TService]
+        | Callable[..., Awaitable[TService]]
+        | Callable[..., TService],
+        implementation_factory_or_implementation_type_or_implementation_instance_none: Callable[
+            ..., Awaitable[TService]
+        ]
+        | Callable[..., TService]
+        | type
+        | object
+        | None = None,
+        /,
+    ) -> None:
+        """Add a keyed singleton service."""
+        self._add_from_overloaded_constructor(
+            lifetime=ServiceLifetime.SINGLETON,
+            service_type_or_implementation_factory=service_type_or_implementation_factory,
+            implementation_factory_or_implementation_type_or_implementation_instance_none=implementation_factory_or_implementation_type_or_implementation_instance_none,
+            service_key=service_key,
+        )
+
+    @overload
+    def add_keyed_scoped[TService](
+        self, service_key: object | None, service_type: type[TService], /
+    ) -> None: ...
+
+    @overload
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        service_type: type[TService],
+        implementation_type: type,
+        /,
+    ) -> None: ...
+
+    def add_keyed_scoped[TService](
+        self,
+        service_key: object | None,
+        service_type_or_implementation_factory: type[TService]
+        | Callable[..., Awaitable[TService]]
+        | Callable[..., TService],
+        implementation_factory_or_implementation_type_or_none: Callable[
+            ..., Awaitable[TService]
+        ]
+        | Callable[..., TService]
+        | type
+        | None = None,
+        /,
+    ) -> None:
+        """Add a scoped service."""
+        self._add_from_overloaded_constructor(
+            lifetime=ServiceLifetime.SCOPED,
+            service_type_or_implementation_factory=service_type_or_implementation_factory,
+            implementation_factory_or_implementation_type_or_implementation_instance_none=implementation_factory_or_implementation_type_or_none,
+            service_key=service_key,
+        )
+
     def build_service_provider(self) -> ServiceProvider:
         """Create a :class:`ServiceProvider` containing services from the provided :class:`ServiceCollection`."""
         return ServiceProvider(self)
@@ -238,6 +461,7 @@ class ServiceCollection:
         | type
         | object
         | None = None,
+        service_key: object | None = None,
     ) -> None:
         service_type_to_add: type[TService] | None = None
         implementation_factory_to_add: (
@@ -278,9 +502,10 @@ class ServiceCollection:
             implementation_factory=implementation_factory_to_add,
             implementation_type=implementation_type_to_add,
             implementation_instance=implementation_instance_to_add,
+            service_key=service_key,
         )
 
-    def _add[TService](
+    def _add[TService](  # noqa: PLR0913
         self,
         lifetime: ServiceLifetime,
         service_type: type[TService] | None,
@@ -289,6 +514,7 @@ class ServiceCollection:
         | None,
         implementation_type: type | None,
         implementation_instance: object | None,
+        service_key: object | None,
     ) -> None:
         provided_service_type = self._get_provided_service_type(
             service_type, implementation_factory
@@ -298,9 +524,19 @@ class ServiceCollection:
             self._add_from_implementation_instance(
                 service_type=provided_service_type,
                 implementation_instance=implementation_instance,
+                service_key=service_key,
                 lifetime=lifetime,
             )
         elif implementation_factory is None:
+            if implementation_type is not None and (
+                not issubclass(implementation_type, provided_service_type)
+                or provided_service_type == implementation_type
+            ):
+                error_message = (
+                    f"{implementation_type} is not subclass of {provided_service_type}"
+                )
+                raise TypeError(error_message)
+
             implementation_type_to_add = (
                 implementation_type
                 if implementation_type is not None
@@ -309,18 +545,21 @@ class ServiceCollection:
             self._add_from_implementation_type(
                 service_type=provided_service_type,
                 implementation_type=implementation_type_to_add,
+                service_key=service_key,
                 lifetime=lifetime,
             )
         elif inspect.iscoroutinefunction(implementation_factory):
             self._add_from_async_implementation_factory(
                 service_type=provided_service_type,
                 implementation_factory=implementation_factory,
+                service_key=service_key,
                 lifetime=lifetime,
             )
         else:
             self._add_from_sync_implementation_factory(
                 service_type=provided_service_type,
                 implementation_factory=implementation_factory,
+                service_key=service_key,
                 lifetime=lifetime,
             )
 
@@ -346,11 +585,16 @@ class ServiceCollection:
         return return_type
 
     def _add_from_implementation_type(
-        self, service_type: type, implementation_type: type, lifetime: ServiceLifetime
+        self,
+        service_type: type,
+        implementation_type: type,
+        service_key: object | None,
+        lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_implementation_type(
             service_type=service_type,
             implementation_type=implementation_type,
+            service_key=service_key,
             lifetime=lifetime,
         )
         self._descriptors.append(descriptor)
@@ -359,11 +603,13 @@ class ServiceCollection:
         self,
         service_type: type,
         implementation_instance: object,
+        service_key: object | None,
         lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_implementation_instance(
             service_type=service_type,
             implementation_instance=implementation_instance,
+            service_key=service_key,
             lifetime=lifetime,
         )
         self._descriptors.append(descriptor)
@@ -372,11 +618,13 @@ class ServiceCollection:
         self,
         service_type: type,
         implementation_factory: Callable[..., object],
+        service_key: object | None,
         lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_sync_implementation_factory(
             service_type=service_type,
             implementation_factory=implementation_factory,
+            service_key=service_key,
             lifetime=lifetime,
         )
         self._descriptors.append(descriptor)
@@ -385,11 +633,13 @@ class ServiceCollection:
         self,
         service_type: type,
         implementation_factory: Callable[..., Awaitable[object]],
+        service_key: object | None,
         lifetime: ServiceLifetime,
     ) -> None:
         descriptor = ServiceDescriptor.from_async_implementation_factory(
             service_type=service_type,
             implementation_factory=implementation_factory,
+            service_key=service_key,
             lifetime=lifetime,
         )
         self._descriptors.append(descriptor)

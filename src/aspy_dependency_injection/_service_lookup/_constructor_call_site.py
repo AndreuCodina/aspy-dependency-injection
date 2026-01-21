@@ -19,15 +19,16 @@ class ConstructorCallSite(ServiceCallSite):
     _parameters: Final[list[ParameterInformation]]
     _parameter_call_sites: Final[list[ServiceCallSite | None]]
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         cache: ResultCache,
         service_type: TypedType,
         constructor_information: ConstructorInformation,
         parameters: list[ParameterInformation],
         parameter_call_sites: list[ServiceCallSite | None],
+        service_key: object | None = None,
     ) -> None:
-        super().__init__(cache)
+        super().__init__(cache=cache, key=service_key)
         self._service_type = service_type
         self._constructor_information = constructor_information
         self._parameters = parameters

@@ -16,15 +16,13 @@ from starlette.websockets import WebSocket
 from aspy_dependency_injection._service_lookup._parameter_information import (
     ParameterInformation,
 )
-from aspy_dependency_injection.injectable import Injectable
+from aspy_dependency_injection._utils._param_utils import ParamUtils
 from aspy_dependency_injection.service_provider import (
     ServiceProvider,
     ServiceScope,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from aspy_dependency_injection.service_collection import ServiceCollection
 
 
@@ -123,7 +121,7 @@ class FastApiDependencyInjection:
             if parameter.annotation is Parameter.empty:
                 continue
 
-            injectable_dependency = cls._get_injectable_dependency(parameter)
+            injectable_dependency = ParamUtils.get_injectable_dependency(parameter)
 
             if injectable_dependency is None:
                 continue
@@ -132,24 +130,6 @@ class FastApiDependencyInjection:
             result[parameter_name] = parameter_information
 
         return result
-
-    @classmethod
-    def _get_injectable_dependency(cls, parameter: Parameter) -> Injectable | None:
-        if not hasattr(parameter.annotation, "__metadata__"):
-            return None
-
-        metadata: Sequence[Any] = parameter.annotation.__metadata__
-
-        for metadata_item in metadata:
-            if hasattr(metadata_item, "dependency") and hasattr(
-                metadata_item.dependency, "__is_aspy_depends__"
-            ):
-                dependency = metadata_item.dependency()  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
-
-                if isinstance(dependency, Injectable):
-                    return dependency
-
-        return None
 
     @classmethod
     async def _resolve_injected_parameter(

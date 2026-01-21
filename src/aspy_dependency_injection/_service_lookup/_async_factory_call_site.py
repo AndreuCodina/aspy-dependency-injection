@@ -17,8 +17,9 @@ class AsyncFactoryCallSite(ServiceCallSite):
         cache: ResultCache,
         service_type: TypedType,
         implementation_factory: Callable[..., Awaitable[object]],
+        service_key: object | None = None,
     ) -> None:
-        super().__init__(cache)
+        super().__init__(cache=cache, key=service_key)
         self._service_type = service_type
         self._implementation_factory = implementation_factory
 

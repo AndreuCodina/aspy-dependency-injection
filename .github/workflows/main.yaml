@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write # Allow mkdocs to push to gh-pages branch
+    env:
+      UV_NO_SYNC: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -29,7 +31,7 @@ jobs:
         shell: bash
 
       - name: Test
-        run: uv run --frozen -- pytest --cov=aspy_dependency_injection --cov-branch --cov-report=xml tests
+        run: uv run -- pytest --cov=aspy_dependency_injection --cov-branch --cov-report=xml tests
         shell: bash
 
       - name: Publish coverage
@@ -39,4 +41,4 @@ jobs:
           file: ${{ github.workspace }}/coverage.xml
 
       - name: Publish documentation
-        run: uv run --frozen -- mkdocs gh-deploy --config-file docs/mkdocs.yml --remote-branch gh-pages --clean --force --strict
+        run: uv run -- mkdocs gh-deploy --config-file docs/mkdocs.yml --remote-branch gh-pages --clean --force --strict

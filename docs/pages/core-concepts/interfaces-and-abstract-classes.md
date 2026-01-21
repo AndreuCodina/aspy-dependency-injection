@@ -1,9 +1,10 @@
 # Interfaces & abstract classes
 
-You can register a service by specifying both the service type (interface / abstract class) and the implementation type (concrete class). This is useful when you want to inject services using abstractions.
+We can register a service by specifying both the service type (interface / abstract class) and the implementation type (concrete class). This is useful when we want to inject services using abstractions.
 
-```python
+```python hl_lines="21"
 class NotificationService(ABC):
+    @abstractmethod
     async def send_notification(self, recipient: str, message: str) -> None:
         ...
 
