@@ -24,5 +24,5 @@ class KeyedServiceProvider(ABC):
     async def get_required_keyed_service[TService](
         self, service_key: object | None, service_type: type[TService]
     ) -> object:
-        """Get service of type `TService` or raise ``."""
+        """Get service of type `TService` or raise an error."""
         ...

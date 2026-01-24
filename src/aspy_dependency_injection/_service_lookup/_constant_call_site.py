@@ -19,7 +19,9 @@ class ConstantCallSite(ServiceCallSite):
         result_cache = ResultCache.none(service_type=service_type)
         self._service_type = service_type
 
-        if not isinstance(default_value, service_type.to_type()):
+        if default_value is not None and not isinstance(
+            default_value, service_type.to_type()
+        ):
             error_message = f"Constant value of type '{type(default_value)}' can't be converted to service type '{service_type.to_type()}'"
             raise TypeError(error_message)
 

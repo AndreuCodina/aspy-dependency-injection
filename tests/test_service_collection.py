@@ -1237,7 +1237,7 @@ class TestServiceCollection:
             assert isinstance(resolved_service, ServiceWithKeyedDependency)
             assert isinstance(resolved_service.dependency, ServiceWithNoDependencies)
 
-    async def test_resolve_keyed_service_without_a_key_using_from_keyed_services_annotation_with(
+    async def test_resolve_keyed_service_without_a_key_using_from_keyed_services_annotation_with_none(
         self,
     ) -> None:
         class ServiceWithKeyedDependency:
