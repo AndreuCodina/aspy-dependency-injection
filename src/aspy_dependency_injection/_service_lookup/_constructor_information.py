@@ -21,11 +21,17 @@ class ConstructorInformation:
     def get_parameters(self) -> list[ParameterInformation]:
         init_method = self._type_.to_type().__init__
         init_signature = inspect.signature(init_method)
-        init_type_hints = typing.get_type_hints(init_method)
-        return [
-            ParameterInformation(
-                parameter=parameter.replace(annotation=init_type_hints[parameter_name])
+        init_type_hints = typing.get_type_hints(init_method, include_extras=True)  # pyright: ignore[reportUnusedVariable]
+        parameter_informations: list[ParameterInformation] = []
+
+        for parameter_name, parameter in init_signature.parameters.items():
+            if parameter_name in ["self", "args", "kwargs"]:
+                continue
+
+            parameter_to_use = parameter.replace(
+                annotation=init_type_hints[parameter_name]
             )
-            for parameter_name, parameter in init_signature.parameters.items()
-            if parameter_name not in ["self", "args", "kwargs"]
-        ]
+            parameter_information = ParameterInformation(parameter_to_use)
+            parameter_informations.append(parameter_information)
+
+        return parameter_informations

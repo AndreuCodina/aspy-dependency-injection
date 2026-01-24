@@ -17,7 +17,7 @@ class ServiceProviderCallSite(ServiceCallSite):
         service_type = TypedType.from_type(BaseServiceProvider)
         result_cache = ResultCache.none(service_type=service_type)
         self._service_type = service_type
-        super().__init__(result_cache)
+        super().__init__(cache=result_cache, key=None)
 
     @property
     @override

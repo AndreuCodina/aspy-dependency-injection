@@ -90,6 +90,20 @@ class ServiceProviderEngineScope(
             service_provider_engine_scope=self,
         )
 
+    @override
+    async def get_keyed_service_object(
+        self, service_key: object | None, service_type: TypedType
+    ) -> object | None:
+        if self._is_disposed:
+            raise ObjectDisposedError
+
+        return await self._root_provider.get_service_from_service_identifier(
+            service_identifier=ServiceIdentifier.from_service_type(
+                service_type=service_type, service_key=service_key
+            ),
+            service_provider_engine_scope=self,
+        )
+
     async def capture_disposable(self, service: object | None) -> object | None:
         if service is self or not (
             isinstance(service, (SupportsAsyncContextManager, SupportsContextManager))

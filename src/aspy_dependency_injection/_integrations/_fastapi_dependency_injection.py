@@ -16,15 +16,15 @@ from starlette.websockets import WebSocket
 from aspy_dependency_injection._service_lookup._parameter_information import (
     ParameterInformation,
 )
-from aspy_dependency_injection.injectable import Injectable
+from aspy_dependency_injection._utils._param_utils import ParamUtils
+from aspy_dependency_injection.annotations import FromKeyedServicesInjectable
+from aspy_dependency_injection.exceptions import CannotResolveServiceFromEndpointError
 from aspy_dependency_injection.service_provider import (
     ServiceProvider,
     ServiceScope,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from aspy_dependency_injection.service_collection import ServiceCollection
 
 
@@ -106,9 +106,9 @@ class FastApiDependencyInjection:
 
     @classmethod
     def _get_request_container(cls) -> ServiceScope:
-        """When inside a request, returns the scoped container instance handling the current request.
+        """When inside a request, return the scoped container instance handling the current request.
 
-        This is what you almost always want.It has all the information the app container has in addition
+        This is what we almost always want. It has all the information the app container has in addition
         to data specific to the current request.
         """
         return current_request.get().state.aspy_service_scope
@@ -123,7 +123,7 @@ class FastApiDependencyInjection:
             if parameter.annotation is Parameter.empty:
                 continue
 
-            injectable_dependency = cls._get_injectable_dependency(parameter)
+            injectable_dependency = ParamUtils.get_injectable_dependency(parameter)
 
             if injectable_dependency is None:
                 continue
@@ -134,39 +134,32 @@ class FastApiDependencyInjection:
         return result
 
     @classmethod
-    def _get_injectable_dependency(cls, parameter: Parameter) -> Injectable | None:
-        if not hasattr(parameter.annotation, "__metadata__"):
-            return None
-
-        metadata: Sequence[Any] = parameter.annotation.__metadata__
-
-        for metadata_item in metadata:
-            if hasattr(metadata_item, "dependency") and hasattr(
-                metadata_item.dependency, "__is_aspy_depends__"
-            ):
-                dependency = metadata_item.dependency()  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType, reportAttributeAccessIssue]
-
-                if isinstance(dependency, Injectable):
-                    return dependency
-
-        return None
-
-    @classmethod
     async def _resolve_injected_parameter(
         cls, parameter_information: ParameterInformation
     ) -> object | None:
-        parameter_service = (
-            await cls._get_request_container().service_provider.get_service_object(
-                parameter_information.parameter_type
+        parameter_service: object | None
+
+        if isinstance(
+            parameter_information.injectable_dependency, FromKeyedServicesInjectable
+        ):
+            parameter_service = await cls._get_request_container().service_provider.get_keyed_service_object(
+                parameter_information.injectable_dependency.key,
+                parameter_information.parameter_type,
             )
-        )
+        else:
+            parameter_service = (
+                await cls._get_request_container().service_provider.get_service_object(
+                    parameter_information.parameter_type
+                )
+            )
 
         if parameter_service is None:
             if parameter_information.is_optional:
                 return None
 
-            error_message = f"Unable to resolve service for type '{parameter_information.parameter_type}' while attempting to invoke endpoint"
-            raise RuntimeError(error_message)
+            raise CannotResolveServiceFromEndpointError(
+                parameter_information.parameter_type
+            )
 
         return parameter_service
 

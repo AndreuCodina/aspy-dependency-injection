@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import FastAPI
 
-from aspy_dependency_injection.annotations import Inject
+from aspy_dependency_injection.annotations import FromServices
 from aspy_dependency_injection.service_collection import ServiceCollection
 
 
@@ -23,7 +23,7 @@ app = FastAPI()
 
 @app.post("/users")
 async def create_user(
-    user_service: Annotated[UserService, Inject()],
+    user_service: Annotated[UserService, FromServices()],
 ) -> None:
     await user_service.create_user()
 

@@ -1,9 +1,11 @@
 import typing
 from inspect import Parameter
 from types import UnionType
-from typing import Annotated, Any, Union, final
+from typing import Annotated, Any, Final, Union, final
 
 from aspy_dependency_injection._service_lookup._typed_type import TypedType
+from aspy_dependency_injection._utils._param_utils import ParamUtils
+from aspy_dependency_injection.annotations import Injectable
 
 
 @final
@@ -12,6 +14,7 @@ class ParameterInformation:
     _is_optional: bool
     _has_default_value: bool
     _default_value: object | None
+    _injectable_dependency: Final[Injectable | None]
 
     def __init__(self, parameter: Parameter) -> None:
         if parameter.annotation is Parameter.empty:
@@ -23,6 +26,7 @@ class ParameterInformation:
         self._is_optional = False
         self._has_default_value = False
         self._default_value = None
+        self._injectable_dependency = None
         origin = typing.get_origin(parameter.annotation)
         args = typing.get_args(parameter.annotation)
 
@@ -33,7 +37,13 @@ class ParameterInformation:
             if callable(args[1]):
                 self._default_value = args[1]()
             else:
-                self._default_value = args[1]
+                injectable_dependency = ParamUtils.get_injectable_dependency(parameter)
+
+                if injectable_dependency is not None:
+                    self._has_default_value = False
+                    self._injectable_dependency = injectable_dependency
+                else:
+                    self._default_value = args[1]
 
             origin = typing.get_origin(parameter_type)
 
@@ -67,6 +77,10 @@ class ParameterInformation:
     def default_value(self) -> object | None:
         return self._default_value
 
+    @property
+    def injectable_dependency(self) -> Injectable | None:
+        return self._injectable_dependency
+
     def _is_origin_a_union(self, origin: type) -> bool:
         return origin is Union or origin is UnionType
 
@@ -83,9 +97,12 @@ class ParameterInformation:
             )
             raise RuntimeError(error_message)
 
+        # At this point, we know that the Union has exactly one type plus None
+        # The type that is not None is the actual parameter type
         self._parameter_type = TypedType.from_type(
             next(arg for arg in args if arg is not type(None))
         )
+
         self._is_optional = True
 
         if parameter.default is not Parameter.empty:

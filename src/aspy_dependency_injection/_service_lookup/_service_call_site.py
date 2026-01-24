@@ -11,16 +11,24 @@ class ServiceCallSite(ABC):
 
     _cache: ResultCache
     _value: object | None
+    _key: object | None
     _lock: asyncio.Lock
 
-    def __init__(self, cache: ResultCache, value: object | None = None) -> None:
+    def __init__(
+        self, cache: ResultCache, key: object | None, value: object | None = None
+    ) -> None:
         self._cache = cache
+        self._key = key
         self._value = value
         self._lock = asyncio.Lock()
 
     @property
     def cache(self) -> ResultCache:
         return self._cache
+
+    @property
+    def key(self) -> object | None:
+        return self._key
 
     @property
     def value(self) -> object | None:

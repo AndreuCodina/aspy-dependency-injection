@@ -6,6 +6,7 @@ import pytest
 from aspy_dependency_injection._service_lookup._parameter_information import (
     ParameterInformation,
 )
+from aspy_dependency_injection.annotations import FromServices
 
 
 class TestParameterInformation:
@@ -20,6 +21,7 @@ class TestParameterInformation:
             ("annotated", False, True, "default"),
             ("annotated_union_with_none", True, True, "default"),
             ("annotated_union_with_none_and_default_function", False, True, "default"),
+            ("injectable_dependency", False, False, None),
             ("string", False, False, None),
             ("string_union_with_none", True, False, None),
             ("string_union_with_none_and_default_to_none", True, True, None),
@@ -43,6 +45,7 @@ class TestParameterInformation:
             annotated: Annotated[str, "default"],
             annotated_union_with_none: Annotated[str | None, "default"],
             annotated_union_with_none_and_default_function: Annotated[str, get_default],
+            injectable_dependency: Annotated[str, FromServices()],
             string: str,
             string_union_with_none: str | None,
             string_union_with_none_and_default_to_none: str | None = None,

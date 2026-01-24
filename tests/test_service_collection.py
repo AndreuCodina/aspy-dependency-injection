@@ -1,13 +1,31 @@
 from abc import ABC
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
+from dataclasses import dataclass
 from types import TracebackType
-from typing import Self, override
+from typing import Annotated, Self, override
 
 import pytest
 
 from aspy_dependency_injection._service_lookup._typed_type import TypedType
 from aspy_dependency_injection.abstractions.base_service_provider import (
     BaseServiceProvider,
+)
+from aspy_dependency_injection.abstractions.keyed_service import KeyedService
+from aspy_dependency_injection.abstractions.service_provider_is_keyed_service import (
+    ServiceProviderIsKeyedService,
+)
+from aspy_dependency_injection.abstractions.service_provider_is_service import (
+    ServiceProviderIsService,
+)
+from aspy_dependency_injection.annotations import FromKeyedServices, ServiceKey
+from aspy_dependency_injection.exceptions import (
+    CannotResolveParameterServiceFromImplementationFactoryError,
+    CannotResolveServiceError,
+    CircularDependencyError,
+    InvalidServiceKeyTypeError,
+    KeyedServiceAnyKeyUsedToResolveServiceError,
+    NoKeyedServiceRegisteredError,
+    NoServiceRegisteredError,
 )
 from aspy_dependency_injection.service_collection import ServiceCollection
 from aspy_dependency_injection.service_lifetime import ServiceLifetime
@@ -139,6 +157,71 @@ class TestServiceCollection:
             assert isinstance(resolved_service, ServiceWithNoDependencies)
 
     @pytest.mark.parametrize(
+        argnames=("service_lifetime", "is_async_implementation_factory"),
+        argvalues=[
+            (ServiceLifetime.SINGLETON, True),
+            (ServiceLifetime.SINGLETON, False),
+            (ServiceLifetime.SCOPED, True),
+            (ServiceLifetime.SCOPED, False),
+            (ServiceLifetime.TRANSIENT, True),
+            (ServiceLifetime.TRANSIENT, False),
+        ],
+    )
+    async def test_resolve_keyed_service_with_implementation_factory(
+        self,
+        service_lifetime: ServiceLifetime,
+        is_async_implementation_factory: bool,
+    ) -> None:
+        class KeyedServiceClas:
+            def __init__(self, the_service_key: str) -> None:
+                self.the_service_key = the_service_key
+
+        async def async_implementation_factory(
+            the_key: str | None,
+            _: BaseServiceProvider,
+        ) -> KeyedServiceClas:
+            assert the_key is not None
+            return KeyedServiceClas(the_service_key=the_key)
+
+        def sync_implementation_factory(
+            the_key: str | None,
+            _: BaseServiceProvider,
+        ) -> KeyedServiceClas:
+            assert the_key is not None
+            return KeyedServiceClas(the_service_key=the_key)
+
+        service_key = "test_key"
+        services = ServiceCollection()
+
+        implementation_factory = (
+            async_implementation_factory
+            if is_async_implementation_factory
+            else sync_implementation_factory
+        )
+
+        match service_lifetime:
+            case ServiceLifetime.SINGLETON:
+                services.add_keyed_singleton(
+                    service_key, KeyedServiceClas, implementation_factory
+                )
+            case ServiceLifetime.SCOPED:
+                services.add_keyed_scoped(
+                    service_key, KeyedServiceClas, implementation_factory
+                )
+            case ServiceLifetime.TRANSIENT:
+                services.add_keyed_transient(
+                    service_key, KeyedServiceClas, implementation_factory
+                )
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                service_key, KeyedServiceClas
+            )
+
+            assert isinstance(resolved_service, KeyedServiceClas)
+            assert resolved_service.the_service_key == service_key
+
+    @pytest.mark.parametrize(
         argnames=("service_lifetime"),
         argvalues=[
             ServiceLifetime.SINGLETON,
@@ -255,13 +338,12 @@ class TestServiceCollection:
         assert resolved_service.is_disposed
         assert resolved_service.service_with_async_context_manager_and_no_dependencies.is_disposed
 
-    async def test_fail_when_resolve_circular_dependency(self) -> None:
-        expected_error_message = "A circular dependency was detected for the service of type 'tests.utils.services.SelfCircularDependencyService'"
+    async def test_fail_when_resolving_circular_dependency(self) -> None:
         services = ServiceCollection()
         services.add_transient(SelfCircularDependencyService)
 
         async with services.build_service_provider() as service_provider:
-            with pytest.raises(RuntimeError, match=expected_error_message):
+            with pytest.raises(CircularDependencyError):
                 await service_provider.get_required_service(
                     SelfCircularDependencyService
                 )
@@ -297,15 +379,22 @@ class TestServiceCollection:
 
             assert resolved_service is None
 
-    async def test_get_service_provider(self) -> None:
+    async def test_get_service_with_built_in_service_provider(self) -> None:
         services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
 
         async with services.build_service_provider() as service_provider:
-            resolved_service = await service_provider.get_required_service(
+            resolved_service_provider = await service_provider.get_required_service(
                 BaseServiceProvider
             )
 
-            assert isinstance(resolved_service, BaseServiceProvider)
+            assert isinstance(resolved_service_provider, BaseServiceProvider)
+
+            resolved_service = await resolved_service_provider.get_required_service(
+                ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
 
     @pytest.mark.parametrize(
         argnames=("service_lifetime"),
@@ -641,7 +730,9 @@ class TestServiceCollection:
                 services.add_transient(Service2, implementation_factory)
 
         async with services.build_service_provider() as service_provider:
-            with pytest.raises(RuntimeError):
+            with pytest.raises(
+                CannotResolveParameterServiceFromImplementationFactoryError
+            ):
                 await service_provider.get_required_service(Service2)
 
     @pytest.mark.parametrize(
@@ -776,13 +867,58 @@ class TestServiceCollection:
             ServiceLifetime.TRANSIENT,
         ],
     )
+    async def test_fail_when_registering_implementation_instance_which_is_not_subclass_of_service_type(
+        self, service_lifetime: ServiceLifetime
+    ) -> None:
+        class Parent:
+            pass
+
+        class NotChild:
+            pass
+
+        services = ServiceCollection()
+
+        expected_error_message = f"{NotChild} is not subclass of {Parent}"
+
+        with pytest.raises(TypeError) as exception_info:  # noqa: PT012
+            match service_lifetime:
+                case ServiceLifetime.SINGLETON:
+                    services.add_singleton(Parent, NotChild)
+                case ServiceLifetime.SCOPED:
+                    services.add_scoped(Parent, NotChild)
+                case ServiceLifetime.TRANSIENT:
+                    services.add_transient(Parent, NotChild)
+
+        assert str(exception_info.value) == expected_error_message
+
+        expected_error_message = f"{Parent} is not subclass of {Parent}"
+
+        with pytest.raises(TypeError) as exception_info:  # noqa: PT012
+            match service_lifetime:
+                case ServiceLifetime.SINGLETON:
+                    services.add_singleton(Parent, Parent)
+                case ServiceLifetime.SCOPED:
+                    services.add_scoped(Parent, Parent)
+                case ServiceLifetime.TRANSIENT:
+                    services.add_transient(Parent, Parent)
+
+        assert str(exception_info.value) == expected_error_message
+
+    @pytest.mark.parametrize(
+        argnames=("service_lifetime"),
+        argvalues=[
+            ServiceLifetime.SINGLETON,
+            ServiceLifetime.SCOPED,
+            ServiceLifetime.TRANSIENT,
+        ],
+    )
     async def test_assign_default_values_to_constructor_parameters_when_services_are_not_registered(
         self, service_lifetime: ServiceLifetime
     ) -> None:
         class ServiceWithDefaultValues:
             def __init__(
                 self,
-                value1: str | None,
+                value1: str | None = None,
                 value2: str = "default2",
                 value3: str = "default3",
             ) -> None:
@@ -909,22 +1045,19 @@ class TestServiceCollection:
             is ServiceWithOptionalDependencyWithDefault.DEFAULT_DEPENDENCY
         )
 
-    async def test_fail_when_resolve_non_optional_service_parameter(
+    async def test_fail_when_resolving_non_optional_service_parameter(
         self,
     ) -> None:
         class Service:
             def __init__(self, service: str) -> None:
                 self.service = service
 
-        expected_error_message = "Unable to resolve service with type 'builtins.str' while attempting to activate a service"
         services = ServiceCollection()
         services.add_transient(Service)
 
         async with services.build_service_provider() as service_provider:
-            with pytest.raises(RuntimeError) as exception_info:
+            with pytest.raises(CannotResolveServiceError):
                 await service_provider.get_required_service(Service)
-
-            assert str(exception_info.value) == expected_error_message
 
     async def test_register_implementation_instance(
         self,
@@ -943,3 +1076,534 @@ class TestServiceCollection:
 
             assert resolved_service_1 is implementation_instance
             assert resolved_service_2 is implementation_instance
+
+    @pytest.mark.parametrize(
+        argnames=("service_lifetime"),
+        argvalues=[
+            ServiceLifetime.SINGLETON,
+            ServiceLifetime.SCOPED,
+            ServiceLifetime.TRANSIENT,
+        ],
+    )
+    async def test_resolve_keyed_service(
+        self, service_lifetime: ServiceLifetime
+    ) -> None:
+        key = "key"
+        services = ServiceCollection()
+
+        match service_lifetime:
+            case ServiceLifetime.SINGLETON:
+                services.add_keyed_singleton(key, ServiceWithNoDependencies)
+            case ServiceLifetime.SCOPED:
+                services.add_keyed_scoped(key, ServiceWithNoDependencies)
+            case ServiceLifetime.TRANSIENT:
+                services.add_keyed_transient(key, ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                key, ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_fail_when_the_required_keyed_service_with_a_key_is_not_provided(
+        self,
+    ) -> None:
+        key = "key"
+        services = ServiceCollection()
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(NoKeyedServiceRegisteredError):
+                await service_provider.get_required_keyed_service(
+                    key, ServiceWithNoDependencies
+                )
+
+    async def test_fail_when_the_required_keyed_service_without_a_key_is_not_provided(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(NoServiceRegisteredError):
+                await service_provider.get_required_keyed_service(
+                    None, ServiceWithNoDependencies
+                )
+
+    async def test_fail_when_resolving_non_keyed_service_with_a_key(
+        self,
+    ) -> None:
+        key = "key"
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(NoKeyedServiceRegisteredError):
+                await service_provider.get_required_keyed_service(
+                    key, ServiceWithNoDependencies
+                )
+
+    async def test_resolve_non_keyed_service_without_a_key(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                None, ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_get_service_key_using_service_key_annotation(
+        self,
+    ) -> None:
+        expected_service_key = 1
+
+        class ServiceWithServiceKey:
+            def __init__(self, service_key: Annotated[int, ServiceKey()]) -> None:
+                self.service_key = service_key
+
+        services = ServiceCollection()
+        services.add_keyed_transient(expected_service_key, ServiceWithServiceKey)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                expected_service_key, ServiceWithServiceKey
+            )
+
+            assert isinstance(resolved_service, ServiceWithServiceKey)
+            assert resolved_service.service_key == expected_service_key
+
+    async def test_get_service_key_registered_with_any_key_using_service_key_annotation(
+        self,
+    ) -> None:
+        expected_service_key = 1
+
+        class ServiceWithServiceKey:
+            def __init__(self, service_key: Annotated[int, ServiceKey()]) -> None:
+                self.service_key = service_key
+
+        services = ServiceCollection()
+        services.add_keyed_transient(KeyedService.ANY_KEY, ServiceWithServiceKey)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                expected_service_key, ServiceWithServiceKey
+            )
+
+            assert isinstance(resolved_service, ServiceWithServiceKey)
+            assert resolved_service.service_key == expected_service_key
+
+    async def test_fail_when_service_key_annotation_type_mismatches_service_key_type(
+        self,
+    ) -> None:
+        class ServiceWithServiceKey:
+            def __init__(self, service_key: Annotated[str, ServiceKey()]) -> None:
+                self.service_key = service_key
+
+        services = ServiceCollection()
+        services.add_keyed_transient(1, ServiceWithServiceKey)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(InvalidServiceKeyTypeError):
+                await service_provider.get_required_keyed_service(
+                    1, ServiceWithServiceKey
+                )
+
+    async def test_resolve_keyed_service_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        service_key = "key"
+
+        class ServiceWithKeyedDependency:
+            def __init__(
+                self,
+                dependency: Annotated[
+                    ServiceWithNoDependencies, FromKeyedServices(service_key)
+                ],
+            ) -> None:
+                self.dependency = dependency
+
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, ServiceWithNoDependencies)
+        services.add_transient(ServiceWithKeyedDependency)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithKeyedDependency
+            )
+
+            assert isinstance(resolved_service, ServiceWithKeyedDependency)
+            assert isinstance(resolved_service.dependency, ServiceWithNoDependencies)
+
+    async def test_resolve_keyed_service_without_a_key_using_from_keyed_services_annotation_with_none(
+        self,
+    ) -> None:
+        class ServiceWithKeyedDependency:
+            def __init__(
+                self,
+                dependency: Annotated[
+                    ServiceWithNoDependencies, FromKeyedServices(None)
+                ],
+            ) -> None:
+                self.dependency = dependency
+
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+        services.add_transient(ServiceWithKeyedDependency)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithKeyedDependency
+            )
+
+            assert isinstance(resolved_service, ServiceWithKeyedDependency)
+            assert isinstance(resolved_service.dependency, ServiceWithNoDependencies)
+
+    async def test_resolve_keyed_service_inheriting_key_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        service_key = "key"
+
+        class ServiceWithKeyedDependency:
+            def __init__(
+                self,
+                dependency: Annotated[ServiceWithNoDependencies, FromKeyedServices()],
+            ) -> None:
+                self.dependency = dependency
+
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, ServiceWithNoDependencies)
+        services.add_keyed_transient(service_key, ServiceWithKeyedDependency)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                service_key, ServiceWithKeyedDependency
+            )
+
+            assert isinstance(resolved_service, ServiceWithKeyedDependency)
+            assert isinstance(resolved_service.dependency, ServiceWithNoDependencies)
+
+    async def test_resolve_service_registered_with_any_key(self) -> None:
+        key = KeyedService.ANY_KEY
+        another_key = "another_key"
+
+        services = ServiceCollection()
+        services.add_keyed_transient(key, ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                another_key, ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_fail_when_resolving_a_single_service_with_any_key_as_lookup_key(
+        self,
+    ) -> None:
+        key = KeyedService.ANY_KEY
+
+        services = ServiceCollection()
+        services.add_keyed_transient(key, ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
+                await service_provider.get_required_keyed_service(
+                    key, ServiceWithNoDependencies
+                )
+
+            with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
+                await service_provider.get_keyed_service(key, ServiceWithNoDependencies)
+
+    async def test_register_a_service_for_any_key_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        key = KeyedService.ANY_KEY
+        another_key = "another_key"
+
+        class ServiceWithKeyedDependency:
+            def __init__(
+                self,
+                dependency: Annotated[
+                    ServiceWithNoDependencies, FromKeyedServices(another_key)
+                ],
+            ) -> None:
+                self.dependency = dependency
+
+        services = ServiceCollection()
+        services.add_transient(ServiceWithKeyedDependency)
+        services.add_keyed_transient(key, ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(
+                ServiceWithKeyedDependency
+            )
+
+            assert isinstance(resolved_service, ServiceWithKeyedDependency)
+            assert isinstance(resolved_service.dependency, ServiceWithNoDependencies)
+
+    async def test_resolve_latest_registered_service(
+        self,
+    ) -> None:
+        expected_field = "Yes"
+
+        @dataclass(frozen=True)
+        class Service1:
+            field: str
+
+        def implementation_factory_1() -> Service1:
+            return Service1(field="No")
+
+        def implementation_factory_2() -> Service1:
+            return Service1(field=expected_field)
+
+        services = ServiceCollection()
+        services.add_transient(implementation_factory_1)
+        services.add_transient(implementation_factory_2)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(Service1)
+
+            assert isinstance(resolved_service, Service1)
+            assert resolved_service.field == expected_field
+
+    async def test_resolve_keyed_service_and_dependency_using_implementation_factory_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        class ApplicationSettings:
+            pass
+
+        @dataclass(frozen=True)
+        class Service:
+            key: str
+            application_settings: ApplicationSettings
+
+        def inject_service(
+            service_key: str | None, application_settings: ApplicationSettings
+        ) -> Service:
+            assert service_key is not None
+            return Service(key=service_key, application_settings=application_settings)
+
+        key = "key"
+        services = ServiceCollection()
+        services.add_transient(ApplicationSettings)
+        services.add_keyed_transient(key, inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                key, Service
+            )
+
+            assert isinstance(resolved_service, Service)
+            assert resolved_service.key == key
+            assert isinstance(
+                resolved_service.application_settings,
+                ApplicationSettings,
+            )
+
+    async def test_resolve_service_registered_as_a_key_without_a_key_using_implementation_factory(
+        self,
+    ) -> None:
+        @dataclass(frozen=True)
+        class KeyedService1:
+            service_key: int | None
+
+        @dataclass(frozen=True)
+        class KeyedService2:
+            service_key: int | None
+
+        services = ServiceCollection()
+
+        def inject_service_1(key: int | None) -> KeyedService1:
+            return KeyedService1(service_key=key)
+
+        def inject_service_2(key: int | None) -> KeyedService2:
+            return KeyedService2(service_key=key)
+
+        services.add_keyed_transient(None, inject_service_1)
+        services.add_keyed_transient(None, KeyedService2, inject_service_2)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service_1 = await service_provider.get_required_service(
+                KeyedService1
+            )
+
+            assert isinstance(resolved_service_1, KeyedService1)
+            assert resolved_service_1.service_key is None
+
+            resolved_service_2 = await service_provider.get_required_service(
+                KeyedService2
+            )
+
+            assert isinstance(resolved_service_2, KeyedService2)
+            assert resolved_service_2.service_key is None
+
+    async def test_resolve_service_using_none_as_key_when_registered_keyed_service_with_none_key(
+        self,
+    ) -> None:
+        @dataclass(frozen=True)
+        class KeyedServiceClass:
+            service_key: object | None
+
+        services = ServiceCollection()
+
+        def inject_service(key: object | None) -> KeyedServiceClass:
+            return KeyedServiceClass(service_key=key)
+
+        services.add_keyed_transient(None, inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                None, KeyedServiceClass
+            )
+
+            assert isinstance(resolved_service, KeyedServiceClass)
+            assert resolved_service.service_key is None
+
+    async def test_resolve_a_service_using_none_as_key_but_not_registered_as_a_keyed_service(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                None, ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_send_requested_key_to_implementation_factory_when_service_is_registered_with_any_key(
+        self,
+    ) -> None:
+        @dataclass(frozen=True)
+        class Service:
+            key: str | None
+
+        def inject_service(service_key: object | None) -> Service:
+            assert isinstance(service_key, str | None)
+            return Service(key=service_key)
+
+        expected_service_key = "expected_key"
+        service_key = KeyedService.ANY_KEY
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                expected_service_key, Service
+            )
+
+            assert isinstance(resolved_service, Service)
+            assert resolved_service.key == expected_service_key
+
+    async def test_resolve_keyed_service_of_implementation_factory_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        class ServiceDependency:
+            pass
+
+        @dataclass(frozen=True)
+        class Service:
+            service_dependency: ServiceDependency
+
+        service_key = "key"
+
+        def inject_service(
+            application_settings: Annotated[
+                ServiceDependency, FromKeyedServices(service_key)
+            ],
+        ) -> Service:
+            return Service(service_dependency=application_settings)
+
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, ServiceDependency)
+        services.add_transient(inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(Service)
+
+            assert isinstance(resolved_service, Service)
+            assert isinstance(
+                resolved_service.service_dependency,
+                ServiceDependency,
+            )
+
+    async def test_fail_when_service_key_annotation_can_not_be_used_when_parent_service_is_not_a_keyed_service(
+        self,
+    ) -> None:
+        class ServiceWithServiceKey:
+            def __init__(self, service_key: Annotated[int, ServiceKey()]) -> None:
+                self.service_key = service_key
+
+        services = ServiceCollection()
+        services.add_transient(ServiceWithServiceKey)
+
+        async with services.build_service_provider() as service_provider:
+            with pytest.raises(CannotResolveServiceError):
+                await service_provider.get_required_service(ServiceWithServiceKey)
+
+    async def test_check_if_service_is_registered(self) -> None:
+        class RegisteredService:
+            pass
+
+        class UnregisteredService:
+            pass
+
+        services = ServiceCollection()
+        services.add_transient(RegisteredService)
+
+        async with services.build_service_provider() as service_provider:
+            service_provider_is_service = await service_provider.get_required_service(
+                ServiceProviderIsService
+            )
+            service_provider_is_keyed_service = (
+                await service_provider.get_required_service(
+                    ServiceProviderIsKeyedService
+                )
+            )
+
+            is_registered = service_provider_is_service.is_service(RegisteredService)
+            assert is_registered is True
+            is_registered = service_provider_is_keyed_service.is_service(
+                RegisteredService
+            )
+            assert is_registered is True
+
+            is_registered = service_provider_is_service.is_service(UnregisteredService)
+            assert not is_registered
+            is_registered = service_provider_is_keyed_service.is_service(
+                UnregisteredService
+            )
+            assert not is_registered
+
+    async def test_check_if_keyed_service_is_registered(self) -> None:
+        class RegisteredService:
+            pass
+
+        class UnregisteredService:
+            pass
+
+        service_key = "key"
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, RegisteredService)
+
+        async with services.build_service_provider() as service_provider:
+            service_provider_is_keyed_service = (
+                await service_provider.get_required_service(
+                    ServiceProviderIsKeyedService
+                )
+            )
+
+            is_registered = service_provider_is_keyed_service.is_keyed_service(
+                service_key, RegisteredService
+            )
+
+            assert is_registered is True
+
+            is_registered = service_provider_is_keyed_service.is_keyed_service(
+                service_key, UnregisteredService
+            )
+
+            assert not is_registered
