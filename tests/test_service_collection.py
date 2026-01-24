@@ -1412,3 +1412,94 @@ class TestServiceCollection:
 
             assert isinstance(resolved_service_2, KeyedService2)
             assert resolved_service_2.service_key is None
+
+    async def test_resolve_service_using_none_as_key_when_registered_keyed_service_with_none_key(
+        self,
+    ) -> None:
+        @dataclass(frozen=True)
+        class KeyedService:
+            service_key: object | None
+
+        services = ServiceCollection()
+
+        def inject_service(key: object | None) -> KeyedService:
+            return KeyedService(service_key=key)
+
+        services.add_keyed_transient(None, inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                None, KeyedService
+            )
+
+            assert isinstance(resolved_service, KeyedService)
+            assert resolved_service.service_key is None
+
+    async def test_resolve_a_service_using_none_as_key_but_not_registered_as_a_keyed_service(
+        self,
+    ) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                None, ServiceWithNoDependencies
+            )
+
+            assert isinstance(resolved_service, ServiceWithNoDependencies)
+
+    async def test_send_requested_key_to_implementation_factory_when_service_is_registered_with_any_key(
+        self,
+    ) -> None:
+        @dataclass(frozen=True)
+        class Service:
+            key: str | None
+
+        def inject_service(service_key: object | None) -> Service:
+            assert isinstance(service_key, str | None)
+            return Service(key=service_key)
+
+        expected_service_key = "expected_key"
+        service_key = KeyedService.ANY_KEY
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_keyed_service(
+                expected_service_key, Service
+            )
+
+            assert isinstance(resolved_service, Service)
+            assert resolved_service.key == expected_service_key
+
+    async def test_resolve_keyed_service_of_implementation_factory_using_from_keyed_services_annotation(
+        self,
+    ) -> None:
+        class ServiceDependency:
+            pass
+
+        @dataclass(frozen=True)
+        class Service:
+            service_dependency: ServiceDependency
+
+        service_key = "key"
+
+        def inject_service(
+            application_settings: Annotated[
+                ServiceDependency, FromKeyedServices(service_key)
+            ],
+        ) -> Service:
+            return Service(service_dependency=application_settings)
+
+        services = ServiceCollection()
+        services.add_keyed_transient(service_key, ServiceDependency)
+        services.add_transient(inject_service)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(Service)
+
+            assert isinstance(resolved_service, Service)
+            assert isinstance(
+                resolved_service.service_dependency,
+                ServiceDependency,
+            )

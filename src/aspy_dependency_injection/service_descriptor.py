@@ -199,21 +199,19 @@ class ServiceDescriptor:
         return self._implementation_instance
 
     def has_implementation_type(self) -> bool:
-        return self._implementation_type is not None
+        return self.get_implementation_type() is not None
 
     def get_implementation_type(self) -> TypedType | None:
-        return (
-            self.keyed_implementation_type
-            if self.is_keyed_service
-            else self._implementation_type
-        )
+        if self.is_keyed_service:
+            return self.keyed_implementation_type
+
+        return self._implementation_type
 
     def has_implementation_instance(self) -> bool:
         return self.get_implementation_instance() is not None
 
     def get_implementation_instance(self) -> object | None:
-        return (
-            self.keyed_implementation_instance
-            if self.is_keyed_service
-            else self._implementation_instance
-        )
+        if self.is_keyed_service:
+            return self.keyed_implementation_instance
+
+        return self._implementation_instance

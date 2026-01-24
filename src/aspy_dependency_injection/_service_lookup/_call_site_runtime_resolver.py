@@ -39,6 +39,7 @@ from aspy_dependency_injection._service_lookup._sync_factory_call_site import (
     SyncFactoryCallSite,
 )
 from aspy_dependency_injection._service_lookup._typed_type import TypedType
+from aspy_dependency_injection.annotations import FromKeyedServicesInjectable
 from aspy_dependency_injection.service_provider_engine_scope import (
     ServiceProviderEngineScope,
 )
@@ -275,9 +276,19 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
 
         for parameter in signature.parameters.values():
             parameter_information = ParameterInformation(parameter)
-            parameter_service = await scope.get_service_object(
-                parameter_information.parameter_type
-            )
+            parameter_service: object | None = None
+
+            if isinstance(
+                parameter_information.injectable_dependency, FromKeyedServicesInjectable
+            ):
+                parameter_service = await scope.get_keyed_service_object(
+                    parameter_information.injectable_dependency.key,
+                    parameter_information.parameter_type,
+                )
+            else:
+                parameter_service = await scope.get_service_object(
+                    parameter_information.parameter_type
+                )
 
             if parameter_service is None:
                 if parameter_information.has_default_value:
