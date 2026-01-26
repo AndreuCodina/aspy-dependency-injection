@@ -133,7 +133,7 @@ class CallSiteFactory(ServiceProviderIsKeyedService, ServiceProviderIsService):
     async def get_call_site(
         self, service_identifier: ServiceIdentifier, call_site_chain: CallSiteChain
     ) -> ServiceCallSite | None:
-        override_call_site = self._get_override_call_site(service_identifier)
+        override_call_site = self._get_overriden_call_site(service_identifier)
 
         if override_call_site is not None:
             return override_call_site
@@ -170,7 +170,7 @@ class CallSiteFactory(ServiceProviderIsKeyedService, ServiceProviderIsService):
     def get_overridden_call_site(
         self, service_identifier: ServiceIdentifier
     ) -> ServiceCallSite | None:
-        return self._get_override_call_site(service_identifier)
+        return self._get_overriden_call_site(service_identifier)
 
     async def _create_call_site(
         self, service_identifier: ServiceIdentifier, call_site_chain: CallSiteChain
@@ -342,7 +342,7 @@ class CallSiteFactory(ServiceProviderIsKeyedService, ServiceProviderIsService):
         await self._call_site_cache.upsert(key=call_site_key, value=service_call_site)
         return service_call_site
 
-    def _get_override_call_site(
+    def _get_overriden_call_site(
         self, service_identifier: ServiceIdentifier
     ) -> ServiceCallSite | None:
         override_instance = self._get_override_instance(service_identifier)
