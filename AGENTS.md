@@ -8,7 +8,7 @@
 # General guidance
 
 - Use type hints everywhere.
-- Use standard decorators, such us `override`, when be appropiate.
+- Use standard decorators, such as `override`, when appropriate.
 
 ## Testing
 

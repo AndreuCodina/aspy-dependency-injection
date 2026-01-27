@@ -84,7 +84,7 @@ class NoServiceRegisteredError(AspyDependencyInjectionError):
 
 @final
 class NoKeyedServiceRegisteredError(AspyDependencyInjectionError):
-    """The exception that is thrown when no keyed service is registered for a given type."""
+    """The exception that is thrown when no keyed service is registered for a given type and key."""
 
     def __init__(self, service_type: TypedType, service_key_type: type) -> None:
         message = f"No keyed service for type '{service_type}' using key type '{service_key_type}' has been registered"
@@ -114,13 +114,13 @@ class NoSingletonServiceRegisteredError(AspyDependencyInjectionError):
     """The exception that is thrown when no service is registered for a given type."""
 
     def __init__(self, service_type: TypedType) -> None:
-        message = f"No keyed service for type '{service_type}' has been registered"
+        message = f"No singleton service for type '{service_type}' has been registered"
         super().__init__(message)
 
 
 @final
 class NoKeyedSingletonServiceRegisteredError(AspyDependencyInjectionError):
-    """The exception that is thrown when no keyed service is registered for a given type."""
+    """The exception that is thrown when no keyed service is registered for a given type and key."""
 
     def __init__(self, service_type: TypedType, service_key_type: type) -> None:
         message = f"No keyed service for type '{service_type}' using key type '{service_key_type}' has been registered"

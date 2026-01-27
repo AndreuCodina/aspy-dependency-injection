@@ -655,7 +655,7 @@ class ServiceCollection:
     ) -> None:
         """Mark a registered keyed singleton service as auto-activated.
 
-        An auto-activated keyed singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily)
+        An auto-activated keyed singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily).
         """
         typed_service_type = TypedType(service_type)
         is_descriptor_found = False
@@ -674,16 +674,6 @@ class ServiceCollection:
             raise NoKeyedSingletonServiceRegisteredError(
                 service_type=typed_service_type, service_key_type=type(service_key)
             )
-
-    def _get_service_to_auto_activate(
-        self, service_type: TypedType
-    ) -> ServiceDescriptor:
-        for descriptor in self._descriptors:
-            if (
-                descriptor.service_type == service_type
-                and descriptor.lifetime == ServiceLifetime.SINGLETON
-            ):
-                return descriptor
 
         error_message = f"No singleton service of type {service_type} is registered."
         raise ValueError(error_message)
@@ -866,19 +856,3 @@ class ServiceCollection:
             raise ValueError(error_message)
 
         return return_type
-
-    def _create_from_keyed_sync_implementation_factory(
-        self,
-        service_type: type,
-        implementation_factory: Callable[..., object],
-        service_key: object | None,
-        lifetime: ServiceLifetime,
-        auto_activate: bool,
-    ) -> ServiceDescriptor:
-        return ServiceDescriptor.from_keyed_sync_implementation_factory(
-            service_type=service_type,
-            implementation_factory=implementation_factory,
-            service_key=service_key,
-            lifetime=lifetime,
-            auto_activate=auto_activate,
-        )
