@@ -1,5 +1,7 @@
 # Pluggable architecture
 
+## Overview
+
 **Aspy Dependency Injection** follows the same extension-friendly design that ASP.NET Core popularized. Rather than hiding registrations behind a monolithic container, the library exposes the `ServiceCollection` and encourages features to be layered through small, self-contained modules. This lets applications opt into only the capabilities they need while keeping configurations declarative and easy to reason about.
 
 ## ServiceCollection as the Composition Root
@@ -80,7 +82,7 @@ As a note, if we created our own `add_sqlmodel` extension, the code would be eve
 def add_sqlmodel(services: ServiceCollection) -> None:
     def inject_async_engine(application_settings: ApplicationSettings) -> AsyncEngine:
         return create_async_engine(application_settings.postgresql_connection_string)
-    
+
     ...
 
 
@@ -96,7 +98,7 @@ Other libraries embrace a container-class API: we extend a `Container`, override
 - **Predictability:** Once `build_service_provider()` runs, the provider is sealed. Container-class APIs often allow late mutation or rely on attribute access magic, which can hide ordering bugs.
 - **Testability:** Tests can spin up a fresh `ServiceCollection`, register fakes, and build a provider in a few lines. When registrations sit inside container subclasses, swapping implementations usually means subclassing again or using custom hooks.
 
-In short, the ServiceCollection model mirrors ASP.NET Core’s ergonomics while staying idiomatic to Python: no inheritance requirements, just functional building blocks we can plug together as needed.
+In short, the ServiceCollection model mirrors ASP.NET Core's ergonomics while staying idiomatic to Python: no inheritance requirements, just functional building blocks we can plug together as needed.
 
 ## How to structure feature packages
 

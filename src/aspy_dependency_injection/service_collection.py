@@ -1,13 +1,18 @@
 import inspect
 import typing
 from collections.abc import Awaitable, Callable
-from typing import Final, overload
+from typing import Final, cast, overload
 
 from fastapi import FastAPI
 
 from aspy_dependency_injection._aspy_undefined import AspyUndefined
 from aspy_dependency_injection._integrations._fastapi_dependency_injection import (
     FastApiDependencyInjection,
+)
+from aspy_dependency_injection._service_lookup._typed_type import TypedType
+from aspy_dependency_injection.exceptions import (
+    NoKeyedSingletonServiceRegisteredError,
+    NoSingletonServiceRegisteredError,
 )
 from aspy_dependency_injection.service_descriptor import ServiceDescriptor
 from aspy_dependency_injection.service_lifetime import ServiceLifetime
@@ -459,6 +464,217 @@ class ServiceCollection:
             service_key=service_key,
         )
 
+    @overload
+    def add_auto_activated_singleton[TService](
+        self, service_type: type[TService], /
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        service_type: type[TService],
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        implementation_factory: Callable[..., Awaitable[TService]],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        implementation_factory: Callable[..., TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        service_type: type[TService],
+        implementation_type: type,
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_singleton[TService](
+        self,
+        service_type: type[TService],
+        implementation_instance: object,
+        /,
+    ) -> None: ...
+
+    def add_auto_activated_singleton[TService](
+        self,
+        service_type_or_implementation_factory: type[TService]
+        | Callable[..., Awaitable[TService]]
+        | Callable[..., TService],
+        implementation_factory_or_implementation_type_or_implementation_instance_or_none: Callable[
+            ..., Awaitable[TService]
+        ]
+        | Callable[..., TService]
+        | type
+        | object
+        | None = None,
+        /,
+    ) -> None:
+        """Add an auto-activated singleton service.
+
+        An auto-activated singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily).
+        """
+        self._add_from_overloaded_constructor(
+            lifetime=ServiceLifetime.SINGLETON,
+            service_type_or_implementation_factory=service_type_or_implementation_factory,
+            implementation_factory_or_implementation_type_or_implementation_instance_or_none=implementation_factory_or_implementation_type_or_implementation_instance_or_none,
+            auto_activate=True,
+        )
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService](
+        self,
+        service_key: TKey | None,  # pyright: ignore[reportInvalidTypeVarUse]
+        service_type: type[TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService, *TFactoryParameter](
+        self,
+        service_key: TKey | None,
+        service_type: type[TService],
+        implementation_factory: Callable[
+            [TKey | None, *TFactoryParameter], Awaitable[TService]
+        ],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService, *TFactoryParameter](
+        self,
+        service_key: TKey | None,
+        service_type: type[TService],
+        implementation_factory: Callable[[TKey | None, *TFactoryParameter], TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService, *TFactoryParameter](
+        self,
+        service_key: TKey | None,
+        implementation_factory: Callable[
+            [TKey | None, *TFactoryParameter], Awaitable[TService]
+        ],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService, *TFactoryParameter](
+        self,
+        service_key: TKey | None,
+        implementation_factory: Callable[[TKey | None, *TFactoryParameter], TService],
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService](
+        self,
+        service_key: TKey | None,  # pyright: ignore[reportInvalidTypeVarUse]
+        service_type: type[TService],
+        implementation_type: type,
+        /,
+    ) -> None: ...
+
+    @overload
+    def add_auto_activated_keyed_singleton[TKey, TService](
+        self,
+        service_key: TKey | None,  # pyright: ignore[reportInvalidTypeVarUse]
+        service_type: type[TService],
+        implementation_instance: object,
+        /,
+    ) -> None: ...
+
+    def add_auto_activated_keyed_singleton[TKey, TService, *TFactoryParameter](
+        self,
+        service_key: TKey | None,
+        service_type_or_implementation_factory: type[TService]
+        | Callable[[TKey | None, *TFactoryParameter], Awaitable[TService]]
+        | Callable[[TKey | None, *TFactoryParameter], TService],
+        implementation_factory_or_implementation_type_or_implementation_instance_or_none: Callable[
+            [TKey | None, *TFactoryParameter], Awaitable[TService]
+        ]
+        | Callable[[TKey | None, *TFactoryParameter], TService]
+        | type
+        | object
+        | None = None,
+        /,
+    ) -> None:
+        """Add an auto-activated keyed singleton service.
+
+        An auto-activated keyed singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily).
+        """
+        self._add_from_overloaded_constructor(
+            lifetime=ServiceLifetime.SINGLETON,
+            service_type_or_implementation_factory=service_type_or_implementation_factory,
+            implementation_factory_or_implementation_type_or_implementation_instance_or_none=implementation_factory_or_implementation_type_or_implementation_instance_or_none,
+            service_key=service_key,
+            auto_activate=True,
+        )
+
+    def enable_singleton_auto_activation(self, service_type: type) -> None:
+        """Mark a registered singleton service as auto-activated.
+
+        An auto-activated singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily).
+        """
+        typed_service_type = TypedType.from_type(service_type)
+        is_descriptor_found = False
+
+        for descriptor in self._descriptors:
+            if (
+                descriptor.service_type == typed_service_type
+                and descriptor.lifetime == ServiceLifetime.SINGLETON
+            ):
+                is_descriptor_found = True
+                descriptor.auto_activate = True
+
+        if not is_descriptor_found:
+            raise NoSingletonServiceRegisteredError(typed_service_type)
+
+    def enable_keyed_singleton_auto_activation(
+        self, service_key: object | None, service_type: type
+    ) -> None:
+        """Mark a registered keyed singleton service as auto-activated.
+
+        An auto-activated keyed singleton service is instantiated when the service provider is built (eagerly), rather than when it's first requested (lazily).
+        """
+        typed_service_type = TypedType.from_type(service_type)
+        is_descriptor_found = False
+
+        for descriptor in self._descriptors:
+            if (
+                descriptor.is_keyed_service
+                and descriptor.lifetime == ServiceLifetime.SINGLETON
+                and descriptor.service_type == typed_service_type
+                and descriptor.service_key == service_key
+            ):
+                is_descriptor_found = True
+                descriptor.auto_activate = True
+
+        if not is_descriptor_found:
+            raise NoKeyedSingletonServiceRegisteredError(
+                service_type=typed_service_type, service_key_type=type(service_key)
+            )
+
     def build_service_provider(self) -> ServiceProvider:
         """Create a :class:`ServiceProvider` containing services from the provided :class:`ServiceCollection`."""
         return ServiceProvider(self)
@@ -481,6 +697,7 @@ class ServiceCollection:
         | object
         | None = None,
         service_key: object | None = AspyUndefined.INSTANCE,
+        auto_activate: bool = False,
     ) -> None:
         service_type_to_add: type[TService] | None = None
         implementation_factory_to_add: (
@@ -503,9 +720,12 @@ class ServiceCollection:
             is not None
         ):
             if callable(
-                implementation_factory_or_implementation_type_or_implementation_instance_or_none,
+                implementation_factory_or_implementation_type_or_implementation_instance_or_none
             ):
-                implementation_factory_to_add = implementation_factory_or_implementation_type_or_implementation_instance_or_none  # pyright: ignore[reportAssignmentType]
+                implementation_factory_to_add = cast(
+                    "Callable[..., Awaitable[TService]] | Callable[..., TService]",
+                    implementation_factory_or_implementation_type_or_implementation_instance_or_none,
+                )
             else:
                 implementation_instance_to_add = implementation_factory_or_implementation_type_or_implementation_instance_or_none
         elif (
@@ -522,6 +742,7 @@ class ServiceCollection:
             implementation_type=implementation_type_to_add,
             implementation_instance=implementation_instance_to_add,
             service_key=service_key,
+            auto_activate=auto_activate,
         )
 
     def _add[TService](  # noqa: PLR0913
@@ -534,19 +755,22 @@ class ServiceCollection:
         implementation_type: type | None,
         implementation_instance: object | None,
         service_key: object | None,
+        auto_activate: bool,
     ) -> None:
         provided_service_type = self._get_provided_service_type(
             service_type, implementation_factory
         )
         is_service_key_provided = service_key is not AspyUndefined.INSTANCE
         service_key_to_add = service_key if is_service_key_provided else None
+        service_descriptor: ServiceDescriptor | None = None
 
         if implementation_instance is not None:
-            self._add_from_implementation_instance(
+            service_descriptor = ServiceDescriptor.from_implementation_instance(
                 service_type=provided_service_type,
                 implementation_instance=implementation_instance,
                 service_key=service_key_to_add,
                 lifetime=lifetime,
+                auto_activate=auto_activate,
             )
         elif implementation_factory is None:
             if implementation_type is not None and (
@@ -563,40 +787,54 @@ class ServiceCollection:
                 if implementation_type is not None
                 else provided_service_type
             )
-            self._add_from_implementation_type(
+            service_descriptor = ServiceDescriptor.from_implementation_type(
                 service_type=provided_service_type,
                 implementation_type=implementation_type_to_add,
                 service_key=service_key_to_add,
                 lifetime=lifetime,
+                auto_activate=auto_activate,
             )
         elif inspect.iscoroutinefunction(implementation_factory):
             if is_service_key_provided:
-                self._add_from_keyed_async_implementation_factory(
-                    service_type=provided_service_type,
-                    implementation_factory=implementation_factory,
-                    service_key=service_key_to_add,
-                    lifetime=lifetime,
+                service_descriptor = (
+                    ServiceDescriptor.from_keyed_async_implementation_factory(
+                        service_type=provided_service_type,
+                        implementation_factory=implementation_factory,
+                        service_key=service_key_to_add,
+                        lifetime=lifetime,
+                        auto_activate=auto_activate,
+                    )
                 )
             else:
-                self._add_from_async_implementation_factory(
-                    service_type=provided_service_type,
-                    implementation_factory=implementation_factory,
-                    lifetime=lifetime,
+                service_descriptor = (
+                    ServiceDescriptor.from_async_implementation_factory(
+                        service_type=provided_service_type,
+                        implementation_factory=implementation_factory,
+                        lifetime=lifetime,
+                        auto_activate=auto_activate,
+                    )
                 )
         else:  # noqa: PLR5501
             if is_service_key_provided:
-                self._add_from_keyed_sync_implementation_factory(
-                    service_type=provided_service_type,
-                    implementation_factory=implementation_factory,
-                    service_key=service_key_to_add,
-                    lifetime=lifetime,
+                service_descriptor = (
+                    ServiceDescriptor.from_keyed_sync_implementation_factory(
+                        service_type=provided_service_type,
+                        implementation_factory=implementation_factory,
+                        service_key=service_key_to_add,
+                        lifetime=lifetime,
+                        auto_activate=auto_activate,
+                    )
                 )
             else:
-                self._add_from_sync_implementation_factory(
+                service_descriptor = ServiceDescriptor.from_sync_implementation_factory(
                     service_type=provided_service_type,
                     implementation_factory=implementation_factory,
                     lifetime=lifetime,
+                    auto_activate=auto_activate,
                 )
+
+        assert service_descriptor is not None
+        self._descriptors.append(service_descriptor)
 
     def _get_provided_service_type[TService](
         self,
@@ -618,89 +856,3 @@ class ServiceCollection:
             raise ValueError(error_message)
 
         return return_type
-
-    def _add_from_implementation_type(
-        self,
-        service_type: type,
-        implementation_type: type,
-        service_key: object | None,
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_implementation_type(
-            service_type=service_type,
-            implementation_type=implementation_type,
-            service_key=service_key,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
-
-    def _add_from_implementation_instance(
-        self,
-        service_type: type,
-        implementation_instance: object,
-        service_key: object | None,
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_implementation_instance(
-            service_type=service_type,
-            implementation_instance=implementation_instance,
-            service_key=service_key,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
-
-    def _add_from_sync_implementation_factory(
-        self,
-        service_type: type,
-        implementation_factory: Callable[..., object],
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_sync_implementation_factory(
-            service_type=service_type,
-            implementation_factory=implementation_factory,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
-
-    def _add_from_keyed_sync_implementation_factory(
-        self,
-        service_type: type,
-        implementation_factory: Callable[..., object],
-        service_key: object | None,
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_keyed_sync_implementation_factory(
-            service_type=service_type,
-            implementation_factory=implementation_factory,
-            service_key=service_key,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
-
-    def _add_from_async_implementation_factory(
-        self,
-        service_type: type,
-        implementation_factory: Callable[..., Awaitable[object]],
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_async_implementation_factory(
-            service_type=service_type,
-            implementation_factory=implementation_factory,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
-
-    def _add_from_keyed_async_implementation_factory(
-        self,
-        service_type: type,
-        implementation_factory: Callable[..., Awaitable[object]],
-        service_key: object | None,
-        lifetime: ServiceLifetime,
-    ) -> None:
-        descriptor = ServiceDescriptor.from_keyed_async_implementation_factory(
-            service_type=service_type,
-            implementation_factory=implementation_factory,
-            service_key=service_key,
-            lifetime=lifetime,
-        )
-        self._descriptors.append(descriptor)
