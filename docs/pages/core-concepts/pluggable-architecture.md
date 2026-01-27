@@ -98,7 +98,7 @@ Other libraries embrace a container-class API: we extend a `Container`, override
 - **Predictability:** Once `build_service_provider()` runs, the provider is sealed. Container-class APIs often allow late mutation or rely on attribute access magic, which can hide ordering bugs.
 - **Testability:** Tests can spin up a fresh `ServiceCollection`, register fakes, and build a provider in a few lines. When registrations sit inside container subclasses, swapping implementations usually means subclassing again or using custom hooks.
 
-In short, the ServiceCollection model mirrors ASP.NET Core’s ergonomics while staying idiomatic to Python: no inheritance requirements, just functional building blocks we can plug together as needed.
+In short, the ServiceCollection model mirrors ASP.NET Core's ergonomics while staying idiomatic to Python: no inheritance requirements, just functional building blocks we can plug together as needed.
 
 ## How to structure feature packages
 

@@ -2,9 +2,9 @@
 
 ## Overview
 
-By default, services are built lazily, i.e., they're instantiated when they are requested. This behavior enables lifetime management and reduces startup time.
+By default, services are instantiated/activated lazily, i.e., when they are requested. This behavior enables lifetime management and reduces startup time.
 
-However, some singleton services need to be instantiated/auto-activated before the application starts handling requests, so that our customers don’t experience delayed or timed-out requests. Some examples are machine learning models, database connection pools, telemetry collectors, and background tasks.
+However, some singleton services need to be instantiated/activated before the application starts handling requests (what we call _auto-activation_), so that our customers don't experience delayed or timed-out requests. Some examples are machine learning models, database connection pools, telemetry collectors, and background tasks.
 
 **Example scenario**: In our FastAPI application, we have to load a machine learning model, so we add it as an auto-activated service. If we have one cloud instance for the API, when we deploy a new version, the new one isn't replaced until the model is loaded in memory, ensuring that all requests are served without delays or time-out errors. If we have autoscaling enabled, new instances aren't added to the load balancer until the model is loaded.
 
