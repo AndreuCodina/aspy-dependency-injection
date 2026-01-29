@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @final
-class ServiceProviderEngineScope(BaseServiceContainer, ServiceScope):
+class ServiceContainerEngineScope(BaseServiceContainer, ServiceScope):
     """Container resolving services with scope."""
 
     _root_provider: Final["ServiceProvider"]

@@ -21,11 +21,11 @@ from tests.utils.services import (
 )
 from wirio._service_lookup._typed_type import TypedType
 from wirio.abstractions.keyed_service import KeyedService
-from wirio.abstractions.service_provider_is_keyed_service import (
-    ServiceProviderIsKeyedService,
+from wirio.abstractions.service_container_is_keyed_service import (
+    ServiceContainerIsKeyedService,
 )
-from wirio.abstractions.service_provider_is_service import (
-    ServiceProviderIsService,
+from wirio.abstractions.service_container_is_service import (
+    ServiceContainerIsService,
 )
 from wirio.annotations import FromKeyedServices, ServiceKey
 from wirio.base_service_container import BaseServiceContainer
@@ -1564,23 +1564,23 @@ class TestServiceCollection:
         service_container.add_transient(RegisteredService)
 
         async with service_container:
-            service_provider_is_service = await service_container.get(
-                ServiceProviderIsService
+            service_container_is_service = await service_container.get(
+                ServiceContainerIsService
             )
-            service_provider_is_keyed_service = await service_container.get(
-                ServiceProviderIsKeyedService
+            service_container_is_keyed_service = await service_container.get(
+                ServiceContainerIsKeyedService
             )
 
-            is_registered = service_provider_is_service.is_service(RegisteredService)
+            is_registered = service_container_is_service.is_service(RegisteredService)
             assert is_registered is True
-            is_registered = service_provider_is_keyed_service.is_service(
+            is_registered = service_container_is_keyed_service.is_service(
                 RegisteredService
             )
             assert is_registered is True
 
-            is_registered = service_provider_is_service.is_service(UnregisteredService)
+            is_registered = service_container_is_service.is_service(UnregisteredService)
             assert not is_registered
-            is_registered = service_provider_is_keyed_service.is_service(
+            is_registered = service_container_is_keyed_service.is_service(
                 UnregisteredService
             )
             assert not is_registered
@@ -1597,17 +1597,17 @@ class TestServiceCollection:
         service_container.add_keyed_transient(service_key, RegisteredService)
 
         async with service_container:
-            service_provider_is_keyed_service = await service_container.get(
-                ServiceProviderIsKeyedService
+            service_container_is_keyed_service = await service_container.get(
+                ServiceContainerIsKeyedService
             )
 
-            is_registered = service_provider_is_keyed_service.is_keyed_service(
+            is_registered = service_container_is_keyed_service.is_keyed_service(
                 service_key, RegisteredService
             )
 
             assert is_registered is True
 
-            is_registered = service_provider_is_keyed_service.is_keyed_service(
+            is_registered = service_container_is_keyed_service.is_keyed_service(
                 service_key, UnregisteredService
             )
 

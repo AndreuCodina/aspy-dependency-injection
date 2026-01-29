@@ -1,9 +1,9 @@
 from tests.utils.services import ServiceWithNoDependencies
-from wirio.abstractions.service_provider_is_keyed_service import (
-    ServiceProviderIsKeyedService,
+from wirio.abstractions.service_container_is_keyed_service import (
+    ServiceContainerIsKeyedService,
 )
-from wirio.abstractions.service_provider_is_service import (
-    ServiceProviderIsService,
+from wirio.abstractions.service_container_is_service import (
+    ServiceContainerIsService,
 )
 from wirio.abstractions.service_scope_factory import (
     ServiceScopeFactory,
@@ -18,10 +18,10 @@ class TestServiceProviderIsService:
 
         async with services.build_service_provider() as service_provider:
             service_provider_is_service = await service_provider.get(
-                ServiceProviderIsService
+                ServiceContainerIsService
             )
 
-            assert isinstance(service_provider_is_service, ServiceProviderIsService)
+            assert isinstance(service_provider_is_service, ServiceContainerIsService)
 
     async def test_built_in_services_with_is_service_returns_true(
         self,
@@ -31,10 +31,12 @@ class TestServiceProviderIsService:
 
         async with services.build_service_provider() as service_provider:
             service_provider_is_service = await service_provider.get(
-                ServiceProviderIsService
+                ServiceContainerIsService
             )
 
             assert service_provider_is_service.is_service(BaseServiceContainer)
             assert service_provider_is_service.is_service(ServiceScopeFactory)
-            assert service_provider_is_service.is_service(ServiceProviderIsService)
-            assert service_provider_is_service.is_service(ServiceProviderIsKeyedService)
+            assert service_provider_is_service.is_service(ServiceContainerIsService)
+            assert service_provider_is_service.is_service(
+                ServiceContainerIsKeyedService
+            )
