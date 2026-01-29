@@ -1,4 +1,5 @@
 import asyncio
+import typing
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -49,7 +50,7 @@ from wirio.service_container_engine_scope import (
 )
 
 if TYPE_CHECKING:
-    from wirio.service_collection import ServiceCollection
+    from wirio.service_descriptor import ServiceDescriptor
 
 
 @dataclass(frozen=True)
@@ -64,7 +65,7 @@ class ServiceProvider(
 ):
     """Provider that resolves services."""
 
-    _services: Final["ServiceCollection"]
+    _descriptors: Final[list["ServiceDescriptor"]]
     _root: Final[ServiceContainerEngineScope]
     _engine: Final[ServiceProviderEngine]
     _service_accessors: Final[
@@ -73,15 +74,15 @@ class ServiceProvider(
     _is_disposed: bool
     _call_site_factory: Final[CallSiteFactory]
 
-    def __init__(self, services: "ServiceCollection") -> None:
-        self._services = services
+    def __init__(self, descriptors: list["ServiceDescriptor"]) -> None:
+        self._descriptors = descriptors
         self._root = ServiceContainerEngineScope(
             service_provider=self, is_root_scope=True
         )
         self._engine = self._get_engine()
         self._service_accessors = AsyncConcurrentDictionary()
         self._is_disposed = False
-        self._call_site_factory = CallSiteFactory(services)
+        self._call_site_factory = CallSiteFactory(descriptors)
 
     @property
     def root(self) -> ServiceContainerEngineScope:
@@ -141,7 +142,7 @@ class ServiceProvider(
         return await service_accessor.realized_service(service_provider_engine_scope)
 
     @contextmanager
-    def override_service(
+    def override(
         self, service_type: type, implementation_instance: object | None
     ) -> Generator[None]:
         """Override a service registration within the context manager scope.
@@ -159,7 +160,7 @@ class ServiceProvider(
             yield
 
     @contextmanager
-    def override_keyed_service(
+    def override_keyed(
         self,
         service_key: object | None,
         service_type: type,
@@ -244,7 +245,7 @@ class ServiceProvider(
 
     async def _activate_auto_activated_singletons(self) -> None:
         """Activate all singletons registered with auto_activate=True."""
-        for service_descriptor in self._services.descriptors:
+        for service_descriptor in self._descriptors:
             if not service_descriptor.auto_activate:
                 continue
 
@@ -255,13 +256,13 @@ class ServiceProvider(
                 service_provider_engine_scope=self._root,
             )
 
-    @override
+    @typing.override
     async def __aenter__(self) -> Self:
         await self._add_built_in_services()
         await self._activate_auto_activated_singletons()
         return self
 
-    @override
+    @typing.override
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,

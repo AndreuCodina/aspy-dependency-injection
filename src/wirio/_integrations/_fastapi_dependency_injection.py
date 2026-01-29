@@ -25,7 +25,7 @@ from wirio.service_provider import (
 )
 
 if TYPE_CHECKING:
-    from wirio.service_collection import ServiceCollection
+    from wirio.service_container import ServiceContainer
 
 
 current_request: ContextVar[Request | WebSocket] = ContextVar("wirio_starlette_request")
@@ -34,7 +34,7 @@ current_request: ContextVar[Request | WebSocket] = ContextVar("wirio_starlette_r
 @final
 class FastApiDependencyInjection:
     @classmethod
-    def setup(cls, app: FastAPI, services: "ServiceCollection") -> None:
+    def setup(cls, app: FastAPI, services: "ServiceContainer") -> None:
         service_provider = services.build_service_provider()
         app.state.wirio_service_provider = service_provider
         app.add_middleware(_WirioAsgiMiddleware)

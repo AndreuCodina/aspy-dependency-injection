@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Final, final, override
+from typing import ClassVar, Final, final, override
 
 from wirio._async_concurrent_dictionary import (
     AsyncConcurrentDictionary,
@@ -60,9 +60,6 @@ from wirio.exceptions import (
 )
 from wirio.service_descriptor import ServiceDescriptor
 
-if TYPE_CHECKING:
-    from wirio.service_collection import ServiceCollection
-
 
 @final
 class _ServiceDescriptorCacheItem:
@@ -110,8 +107,8 @@ class CallSiteFactory(ServiceContainerIsKeyedService, ServiceContainerIsService)
     _call_site_locks: Final[AsyncConcurrentDictionary[ServiceIdentifier, asyncio.Lock]]
     _service_overrides: Final[dict[ServiceIdentifier, list[object | None]]]
 
-    def __init__(self, services: "ServiceCollection") -> None:
-        self._descriptors = services.descriptors.copy()
+    def __init__(self, descriptors: list["ServiceDescriptor"]) -> None:
+        self._descriptors = descriptors.copy()
         self._descriptor_lookup = {}
         self._call_site_cache = AsyncConcurrentDictionary[
             ServiceCacheKey, ServiceCallSite
