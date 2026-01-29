@@ -89,14 +89,15 @@ class TestServiceScopeFactory:
         services = ServiceCollection()
         services.add_keyed_singleton(service_key, ServiceWithNoDependencies)
 
-        async with services.build_service_provider() as service_provider:
-            scope_a = (
+        async with (
+            services.build_service_provider() as service_provider,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-            scope_b = (
+            ).create_scope() as scope_a,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-
+            ).create_scope() as scope_b,
+        ):
             assert (
                 await scope_a.service_provider.get_service(ServiceWithNoDependencies)
                 is None
@@ -148,14 +149,15 @@ class TestServiceScopeFactory:
         services = ServiceCollection()
         services.add_keyed_scoped(service_key, ServiceWithNoDependencies)
 
-        async with services.build_service_provider() as service_provider:
-            scope_a = (
+        async with (
+            services.build_service_provider() as service_provider,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-            scope_b = (
+            ).create_scope() as scope_a,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-
+            ).create_scope() as scope_b,
+        ):
             assert (
                 await scope_a.service_provider.get_service(ServiceWithNoDependencies)
                 is None
@@ -207,14 +209,15 @@ class TestServiceScopeFactory:
         services = ServiceCollection()
         services.add_keyed_transient(service_key, ServiceWithNoDependencies)
 
-        async with services.build_service_provider() as service_provider:
-            scope_a = (
+        async with (
+            services.build_service_provider() as service_provider,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-            scope_b = (
+            ).create_scope() as scope_a,
+            (
                 await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope()
-
+            ).create_scope() as scope_b,
+        ):
             assert (
                 await scope_a.service_provider.get_service(ServiceWithNoDependencies)
                 is None
