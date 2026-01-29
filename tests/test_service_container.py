@@ -1696,3 +1696,31 @@ class TestServiceContainer:
                 )
             else:
                 services.enable_singleton_auto_activation(ServiceWithNoDependencies)
+
+    async def test_close_when_container_is_not_built(self) -> None:
+        services = ServiceContainer()
+
+        await services.close()
+
+    async def test_close_when_container_is_built(self) -> None:
+        services = ServiceContainer()
+        services.add_scoped(ServiceWithNoDependencies)
+
+        resolved_service = await services.get(ServiceWithNoDependencies)
+
+        assert isinstance(resolved_service, ServiceWithNoDependencies)
+        await services.close()
+
+    async def test_rebuild_container_after_context_manager(self) -> None:
+        services = ServiceContainer()
+        services.add_scoped(ServiceWithNoDependencies)
+
+        async with services:
+            resolved_service_1 = await services.get(ServiceWithNoDependencies)
+            assert isinstance(resolved_service_1, ServiceWithNoDependencies)
+
+        async with services:
+            resolved_service_2 = await services.get(ServiceWithNoDependencies)
+            assert isinstance(resolved_service_2, ServiceWithNoDependencies)
+
+        assert resolved_service_1 is not resolved_service_2

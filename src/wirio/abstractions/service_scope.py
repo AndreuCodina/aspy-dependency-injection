@@ -16,7 +16,7 @@ class ServiceScope(AbstractAsyncContextManager["ServiceScope"], ABC):
     @property
     @abstractmethod
     def services(self) -> BaseServiceContainer:
-        """Gets the :class:`BaseServiceProvider` used to resolve dependencies from the scope."""
+        """Gets the :class:`BaseServiceContainer` used to resolve dependencies from the scope."""
 
     @abstractmethod
     async def try_get[TService](self, service_type: type[TService]) -> TService | None:

@@ -66,7 +66,7 @@ Finally, we convert the service collection into a service provider, which will v
 We can substitute dependencies on the fly meanwhile the context manager is active.
 
 ```python
-with services.override_service(EmailService, email_service_mock):
+with services.override(EmailService, email_service_mock):
     user_service = await services.get(UserService)
 ```
 
@@ -89,7 +89,7 @@ with services.override_service(EmailService, email_service_mock):
                 async def create_user(self) -> None:
                     pass
 
-        async def main() -> None:
+    async def main() -> None:
         services = ServiceContainer()
         services.add_transient(EmailService)
         services.add_transient(UserService)
@@ -97,8 +97,8 @@ with services.override_service(EmailService, email_service_mock):
         async with services:  # (1)!
             user_service = await services.get(UserService)
 
-        if __name__ == "**main**":
-            asyncio.run(main())
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
     1. We recommended calling `.close` or using a context manager to ensure a proper disposal of resources when the application ends
