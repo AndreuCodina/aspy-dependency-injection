@@ -1,6 +1,6 @@
 import asyncio
 
-from wirio.service_collection import ServiceCollection
+from wirio.service_container import ServiceContainer
 
 
 class EmailService:
@@ -15,14 +15,14 @@ class UserService:
         pass
 
 
-services = ServiceCollection()
-services.add_transient(EmailService)
-services.add_transient(UserService)
+service_container = ServiceContainer()
+service_container.add_transient(EmailService)
+service_container.add_transient(UserService)
 
 
 async def main() -> None:
-    async with services.build_service_provider() as service_provider:
-        user_service = await service_provider.get(UserService)
+    async with service_container:
+        user_service = await service_container.get(UserService)
         await user_service.create_user()
 
 

@@ -1,15 +1,15 @@
 from wirio.abstractions.service_container_is_keyed_service import (
     ServiceContainerIsKeyedService,
 )
-from wirio.service_collection import ServiceCollection
+from wirio.service_container import ServiceContainer
 
 
 class TestServiceProviderIsKeyedService:
     async def test_resolve_service_provider_is_keyed_service(self) -> None:
-        services = ServiceCollection()
+        service_container = ServiceContainer()
 
-        async with services.build_service_provider() as service_provider:
-            service_scope_factory = await service_provider.get(
+        async with service_container:
+            service_scope_factory = await service_container.get(
                 ServiceContainerIsKeyedService
             )
 

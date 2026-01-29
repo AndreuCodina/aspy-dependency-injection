@@ -9,15 +9,15 @@ from wirio.abstractions.service_scope_factory import (
     ServiceScopeFactory,
 )
 from wirio.base_service_container import BaseServiceContainer
-from wirio.service_collection import ServiceCollection
+from wirio.service_container import ServiceContainer
 
 
 class TestServiceProviderIsService:
     async def test_resolve_service_provider_is_service(self) -> None:
-        services = ServiceCollection()
+        service_container = ServiceContainer()
 
-        async with services.build_service_provider() as service_provider:
-            service_provider_is_service = await service_provider.get(
+        async with service_container:
+            service_provider_is_service = await service_container.get(
                 ServiceContainerIsService
             )
 
@@ -26,11 +26,11 @@ class TestServiceProviderIsService:
     async def test_built_in_services_with_is_service_returns_true(
         self,
     ) -> None:
-        services = ServiceCollection()
-        services.add_transient(ServiceWithNoDependencies)
+        service_container = ServiceContainer()
+        service_container.add_transient(ServiceWithNoDependencies)
 
-        async with services.build_service_provider() as service_provider:
-            service_provider_is_service = await service_provider.get(
+        async with service_container:
+            service_provider_is_service = await service_container.get(
                 ServiceContainerIsService
             )
 

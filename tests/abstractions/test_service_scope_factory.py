@@ -11,26 +11,26 @@ from wirio.abstractions.service_scope_factory import (
 from wirio.exceptions import (
     KeyedServiceAnyKeyUsedToResolveServiceError,
 )
-from wirio.service_collection import ServiceCollection
+from wirio.service_container import ServiceContainer
 
 
 class TestServiceScopeFactory:
     async def test_resolve_service_scope_factory(self) -> None:
-        services = ServiceCollection()
+        service_container = ServiceContainer()
 
-        async with services.build_service_provider() as service_provider:
-            service_scope_factory = await service_provider.get(ServiceScopeFactory)
+        async with service_container:
+            service_scope_factory = await service_container.get(ServiceScopeFactory)
 
             assert isinstance(service_scope_factory, ServiceScopeFactory)
 
     async def test_service_scope_factory_is_singleton(self) -> None:
-        services = ServiceCollection()
+        service_container = ServiceContainer()
 
-        async with services.build_service_provider() as service_provider:
-            scope_factory_1 = await service_provider.get(ServiceScopeFactory)
-            scope_factory_2 = await service_provider.get(ServiceScopeFactory)
+        async with service_container:
+            scope_factory_1 = await service_container.get(ServiceScopeFactory)
+            scope_factory_2 = await service_container.get(ServiceScopeFactory)
 
-            async with service_provider.create_scope() as service_scope:
+            async with service_container.create_scope() as service_scope:
                 scope_factory_3 = await service_scope.service_container.get(
                     ServiceScopeFactory
                 )
@@ -41,11 +41,11 @@ class TestServiceScopeFactory:
     async def test_can_resolve_and_dispose_scoped_services_from_cached_scope_factory(
         self,
     ) -> None:
-        services = ServiceCollection()
-        services.add_scoped(ServiceWithAsyncContextManagerAndNoDependencies)
+        service_container = ServiceContainer()
+        service_container.add_scoped(ServiceWithAsyncContextManagerAndNoDependencies)
 
-        async with services.build_service_provider() as service_provider:
-            cached_scope_factory = await service_provider.get(ServiceScopeFactory)
+        async with service_container:
+            cached_scope_factory = await service_container.get(ServiceScopeFactory)
 
             for _ in range(3):
                 async with cached_scope_factory.create_scope() as outer_scope:
@@ -76,13 +76,17 @@ class TestServiceScopeFactory:
         self,
     ) -> None:
         service_key = "key"
-        services = ServiceCollection()
-        services.add_keyed_singleton(service_key, ServiceWithNoDependencies)
+        service_container = ServiceContainer()
+        service_container.add_keyed_singleton(service_key, ServiceWithNoDependencies)
 
         async with (
-            services.build_service_provider() as service_provider,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
+            service_container,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_a,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_b,
         ):
             assert (
                 await scope_a.service_container.try_get(ServiceWithNoDependencies)
@@ -132,13 +136,17 @@ class TestServiceScopeFactory:
         self,
     ) -> None:
         service_key = "key"
-        services = ServiceCollection()
-        services.add_keyed_scoped(service_key, ServiceWithNoDependencies)
+        service_container = ServiceContainer()
+        service_container.add_keyed_scoped(service_key, ServiceWithNoDependencies)
 
         async with (
-            services.build_service_provider() as service_provider,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
+            service_container,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_a,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_b,
         ):
             assert (
                 await scope_a.service_container.try_get(ServiceWithNoDependencies)
@@ -188,13 +196,17 @@ class TestServiceScopeFactory:
         self,
     ) -> None:
         service_key = "key"
-        services = ServiceCollection()
-        services.add_keyed_transient(service_key, ServiceWithNoDependencies)
+        service_container = ServiceContainer()
+        service_container.add_keyed_transient(service_key, ServiceWithNoDependencies)
 
         async with (
-            services.build_service_provider() as service_provider,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
-            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
+            service_container,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_a,
+            (
+                await service_container.get(ServiceScopeFactory)
+            ).create_scope() as scope_b,
         ):
             assert (
                 await scope_a.service_container.try_get(ServiceWithNoDependencies)

@@ -46,15 +46,15 @@ app = FastAPI()
 async def create_user(user_service: Annotated[UserService, FromServices()]) -> None:
     ...
 
-services = ServiceCollection()
-services.add_transient(EmailService)
-services.add_transient(UserService)
-services.configure_fastapi(app)
+service_container = ServiceContainer()
+service_container.add_transient(EmailService)
+service_container.add_transient(UserService)
+service_container.configure_fastapi(app)
 ```
 
 ## ✨ Quickstart without FastAPI
 
-Define services and create a service provider.
+Register services and resolve them.
 
 ```python
 class EmailService:
@@ -66,19 +66,18 @@ class UserService:
         self.email_service = email_service
 
 
-services = ServiceCollection()
-services.add_transient(EmailService)
-services.add_transient(UserService)
+service_container = ServiceContainer()
+service_container.add_transient(EmailService)
+service_container.add_transient(UserService)
 
-async with services.build_service_provider() as service_provider:
-    user_service = await service_provider.get_required_service(UserService)
+user_service = await service_provider.get(UserService)
 ```
 
 If we want a scope per operation (e.g., per HTTP request or message from a queue), we can create a scope from the service provider:
 
 ```python
-async with service_provider.create_scope() as service_scope:
-    user_service = await service_scope.get_required_service(UserService)
+async with service_container.create_scope() as service_scope:
+    user_service = await service_scope.get(UserService)
 ```
 
 ## 🔄 Lifetimes
@@ -133,20 +132,11 @@ The factories can take as parameters other services registered. In this case, `i
 
 ## 🧪 Simplified testing
 
-We can create a fixture in `conftest.py` that provides a `ServiceProvider` instance:
+We can substitute dependencies on the fly meanwhile the context manager is active.
 
 ```python
-@pytest.fixture
-async def service_provider() -> AsyncGenerator[ServiceProvider]:
-    async with services.build_service_provider() as service_provider:
-        yield service_provider
-```
-
-And then we can inject it into our tests and resolve the services.
-
-```python
-async def test_create_user(service_provider: ServiceProvider) -> None:
-    user_service = await service_provider.get_required_service(UserService)
+with service_container.override(EmailService, email_service_mock):
+    user_service = await service_container.get(UserService)
 ```
 
 ## 📝 Interfaces & abstract classes
