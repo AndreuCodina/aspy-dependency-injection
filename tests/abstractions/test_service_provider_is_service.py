@@ -1,7 +1,4 @@
 from tests.utils.services import ServiceWithNoDependencies
-from wirio.abstractions.base_service_provider import (
-    BaseServiceProvider,
-)
 from wirio.abstractions.service_provider_is_keyed_service import (
     ServiceProviderIsKeyedService,
 )
@@ -11,6 +8,7 @@ from wirio.abstractions.service_provider_is_service import (
 from wirio.abstractions.service_scope_factory import (
     ServiceScopeFactory,
 )
+from wirio.base_service_container import BaseServiceContainer
 from wirio.service_collection import ServiceCollection
 
 
@@ -36,7 +34,7 @@ class TestServiceProviderIsService:
                 ServiceProviderIsService
             )
 
-            assert service_provider_is_service.is_service(BaseServiceProvider)
+            assert service_provider_is_service.is_service(BaseServiceContainer)
             assert service_provider_is_service.is_service(ServiceScopeFactory)
             assert service_provider_is_service.is_service(ServiceProviderIsService)
             assert service_provider_is_service.is_service(ServiceProviderIsKeyedService)

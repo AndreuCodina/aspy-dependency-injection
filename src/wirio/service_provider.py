@@ -45,6 +45,7 @@ from wirio.abstractions.service_scope import (
 from wirio.abstractions.service_scope_factory import (
     ServiceScopeFactory,
 )
+from wirio.base_service_container import BaseServiceContainer
 from wirio.exceptions import ObjectDisposedError
 from wirio.service_provider_engine_scope import (
     ServiceProviderEngineScope,
@@ -213,7 +214,7 @@ class ServiceProvider(
         """Add built-in services that aren't part of the list of service descriptors."""
         await self._call_site_factory.add(
             ServiceIdentifier.from_service_type(
-                TypedType.from_type(BaseServiceProvider)
+                TypedType.from_type(BaseServiceContainer)
             ),
             ServiceProviderCallSite(),
         )

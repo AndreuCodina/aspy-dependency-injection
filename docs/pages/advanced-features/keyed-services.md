@@ -54,17 +54,17 @@ class OrderService:
     def __init__(
         self,
         feature_manager: FeatureManager,
-        service_provider: BaseServiceProvider
+        service_container: BaseServiceContainer
     ) -> None:
         self.feature_manager = feature_manager
-        self.service_provider = service_provider
+        self.service_container = service_container
 
 
     async def calculate_price(self, product: Product) -> Decimal:
         pricing_service = (
-            await self.service_provider.get_required_keyed_service("new", PricingService)
+            await self.service_container.get_keyed("new", PricingService)
             if await self.feature_manager.is_enabled("NewPricing")
-            else await self.service_provider.get_required_keyed_service("legacy", PricingService)
+            else await self.service_container.get_keyed("legacy", PricingService)
         )
         return pricing_service.calculate_price(product)
 
@@ -92,13 +92,13 @@ def inject_tenant_postgres_client(tenant_id: str | None) -> PostgresClient:
     return PostgresClient(f"postgresql://{tenant_id}.example/db")
 
 
-services = ServiceCollection()
-services.add_keyed_singleton("principal", inject_principal_postgres_client)
-services.add_keyed_singleton("secondary", inject_secondary_postgres_client)
-services.add_keyed_singleton(KeyedService.ANY_KEY, inject_tenant_postgres_client)
+service_container = ServiceContainer()
+service_container.add_keyed_singleton("principal", inject_principal_postgres_client)
+service_container.add_keyed_singleton("secondary", inject_secondary_postgres_client)
+service_container.add_keyed_singleton(KeyedService.ANY_KEY, inject_tenant_postgres_client)
 
-async with services.build_service_provider() as service_provider:
-    postgres_client = await service_provider.get_required_keyed_service(
+async with service_container:
+    postgres_client = await service_container.get_keyed(
         "principal", PostgresClient
     )
 ```
@@ -119,7 +119,7 @@ class TenantRepository:
         self,
         connection: Annotated[PostgresClient, FromKeyedServices("tenant-1")],
     ) -> None:
-        self._connection = connection
+        self.connection = connection
 ```
 
 `FromKeyedServices` behaves differently depending on how we call it:
@@ -135,6 +135,7 @@ To know which key was requested when our service was resolved, annotate a constr
 ```python
 from typing import Annotated
 from wirio.annotations import ServiceKey
+
 
 class KeyAwareCache:
     def __init__(self, key: Annotated[str, ServiceKey()]) -> None:

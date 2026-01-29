@@ -35,9 +35,6 @@ from wirio._service_lookup._sync_factory_call_site import (
 )
 from wirio._service_lookup._typed_type import TypedType
 from wirio._service_lookup.service_cache_key import ServiceCacheKey
-from wirio.abstractions.base_service_provider import (
-    BaseServiceProvider,
-)
 from wirio.abstractions.keyed_service import KeyedService
 from wirio.abstractions.service_key_lookup_mode import (
     ServiceKeyLookupMode,
@@ -55,6 +52,7 @@ from wirio.annotations import (
     FromKeyedServicesInjectable,
     ServiceKeyInjectable,
 )
+from wirio.base_service_container import BaseServiceContainer
 from wirio.exceptions import (
     CannotResolveServiceError,
     InvalidServiceDescriptorError,
@@ -548,7 +546,7 @@ class CallSiteFactory(ServiceProviderIsKeyedService, ServiceProviderIsService):
             return True
 
         return (
-            service_type == TypedType.from_type(BaseServiceProvider)
+            service_type == TypedType.from_type(BaseServiceContainer)
             or service_type == TypedType.from_type(ServiceScopeFactory)
             or service_type == TypedType.from_type(ServiceProviderIsService)
             or service_type == TypedType.from_type(ServiceProviderIsKeyedService)

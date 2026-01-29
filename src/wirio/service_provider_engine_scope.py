@@ -15,10 +15,8 @@ from wirio._service_lookup._supports_context_manager import (
 )
 from wirio._service_lookup._typed_type import TypedType
 from wirio._service_lookup.service_cache_key import ServiceCacheKey
-from wirio.abstractions.base_service_provider import (
-    BaseServiceProvider,
-)
 from wirio.abstractions.service_scope import ServiceScope
+from wirio.base_service_container import BaseServiceContainer
 from wirio.exceptions import ObjectDisposedError
 
 if TYPE_CHECKING:
@@ -26,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @final
-class ServiceProviderEngineScope(BaseServiceProvider, ServiceScope):
+class ServiceProviderEngineScope(BaseServiceContainer, ServiceScope):
     """Container resolving services with scope."""
 
     _root_provider: Final["ServiceProvider"]
@@ -72,7 +70,7 @@ class ServiceProviderEngineScope(BaseServiceProvider, ServiceScope):
 
     @property
     @override
-    def service_provider(self) -> BaseServiceProvider:
+    def service_container(self) -> BaseServiceContainer:
         return self
 
     @override

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager
 
-from wirio.abstractions.base_service_provider import (
-    BaseServiceProvider,
+from wirio.base_service_container import (
+    BaseServiceContainer,
 )
 
 
@@ -15,7 +15,7 @@ class ServiceScope(AbstractAsyncContextManager["ServiceScope"], ABC):
 
     @property
     @abstractmethod
-    def service_provider(self) -> BaseServiceProvider:
+    def service_container(self) -> BaseServiceContainer:
         """Gets the :class:`BaseServiceProvider` used to resolve dependencies from the scope."""
 
     @abstractmethod

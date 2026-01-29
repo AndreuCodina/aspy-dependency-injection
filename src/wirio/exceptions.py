@@ -12,7 +12,7 @@ class ObjectDisposedError(WirioError):
     """The exception that is thrown when an operation is performed on a disposed object."""
 
     def __init__(self) -> None:
-        super().__init__("BaseServiceProvider")
+        super().__init__("BaseServiceContainer")
 
 
 @final

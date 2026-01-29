@@ -143,14 +143,14 @@ class FastApiDependencyInjection:
             parameter_information.injectable_dependency, FromKeyedServicesInjectable
         ):
             parameter_service = (
-                await cls._get_request_container().service_provider.get_keyed_object(
+                await cls._get_request_container().service_container.get_keyed_object(
                     parameter_information.injectable_dependency.key,
                     parameter_information.parameter_type,
                 )
             )
         else:
             parameter_service = (
-                await cls._get_request_container().service_provider.get_object(
+                await cls._get_request_container().service_container.get_object(
                     parameter_information.parameter_type
                 )
             )

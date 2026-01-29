@@ -20,9 +20,6 @@ from tests.utils.services import (
     ServiceWithSyncContextManagerAndNoDependencies,
 )
 from wirio._service_lookup._typed_type import TypedType
-from wirio.abstractions.base_service_provider import (
-    BaseServiceProvider,
-)
 from wirio.abstractions.keyed_service import KeyedService
 from wirio.abstractions.service_provider_is_keyed_service import (
     ServiceProviderIsKeyedService,
@@ -31,6 +28,7 @@ from wirio.abstractions.service_provider_is_service import (
     ServiceProviderIsService,
 )
 from wirio.annotations import FromKeyedServices, ServiceKey
+from wirio.base_service_container import BaseServiceContainer
 from wirio.exceptions import (
     CannotResolveParameterServiceFromImplementationFactoryError,
     CannotResolveServiceError,
@@ -135,12 +133,12 @@ class TestServiceCollection:
         self, service_lifetime: ServiceLifetime, is_async_implementation_factory: bool
     ) -> None:
         async def async_implementation_factory(
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> ServiceWithNoDependencies:
             return ServiceWithNoDependencies()
 
         def sync_implementation_factory(
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> ServiceWithNoDependencies:
             return ServiceWithNoDependencies()
 
@@ -193,14 +191,14 @@ class TestServiceCollection:
 
         async def async_implementation_factory(
             the_key: str | None,
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> KeyedServiceClas:
             assert the_key is not None
             return KeyedServiceClas(the_service_key=the_key)
 
         def sync_implementation_factory(
             the_key: str | None,
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> KeyedServiceClas:
             assert the_key is not None
             return KeyedServiceClas(the_service_key=the_key)
@@ -398,16 +396,18 @@ class TestServiceCollection:
 
             assert resolved_service is None
 
-    async def test_get_service_with_built_in_service_provider(self) -> None:
+    async def test_get_service_with_built_in_base_service_container(self) -> None:
         service_container = ServiceContainer()
         service_container.add_transient(ServiceWithNoDependencies)
 
         async with service_container:
-            resolved_service_provider = await service_container.get(BaseServiceProvider)
+            resolved_base_service_container = await service_container.get(
+                BaseServiceContainer
+            )
 
-            assert isinstance(resolved_service_provider, BaseServiceProvider)
+            assert isinstance(resolved_base_service_container, BaseServiceContainer)
 
-            resolved_service = await resolved_service_provider.get(
+            resolved_service = await resolved_base_service_container.get(
                 ServiceWithNoDependencies
             )
 
@@ -783,12 +783,12 @@ class TestServiceCollection:
         self, service_lifetime: ServiceLifetime, is_async_implementation_factory: bool
     ) -> None:
         async def async_implementation_factory(
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> ServiceWithGeneric[str]:
             return ServiceWithGeneric[str]()
 
         def sync_implementation_factory(
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ) -> ServiceWithGeneric[str]:
             return ServiceWithGeneric[str]()
 
@@ -829,7 +829,7 @@ class TestServiceCollection:
         self, service_lifetime: ServiceLifetime
     ) -> None:
         def implementation_factory(  # noqa: ANN202
-            _: BaseServiceProvider,
+            _: BaseServiceContainer,
         ):
             return 0
 
