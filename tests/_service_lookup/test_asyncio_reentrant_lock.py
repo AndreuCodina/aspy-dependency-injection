@@ -25,7 +25,7 @@
 import asyncio
 import random
 import re
-from asyncio import Event, Task
+from asyncio import CancelledError, Event, Task
 from time import monotonic_ns, perf_counter
 from types import TracebackType
 from typing import Any, NoReturn, override
@@ -145,11 +145,11 @@ class TestAsyncioReentrantLock:
             for _ in range(iterations):
                 async with lock:
                     if n % 10 == 0:  # Cancel every 10th task
-                        raise asyncio.CancelledError
+                        raise CancelledError
 
         tasks = [asyncio.create_task(worker(i)) for i in range(num_tasks)]
 
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(CancelledError):
             await asyncio.gather(*tasks)
 
         assert lock.count == 0  # The lock should be released after all tasks are done
@@ -397,7 +397,7 @@ class TestAsyncioReentrantLock:
         task2 = asyncio.create_task(task2_function())
         await asyncio.sleep(0.1)  # Yield control to allow tasks to start
         task2.cancel()
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(CancelledError):
             await task2
         assert not t2_ac.is_set()  # shouldn't acquire
         t1_done.set()  # Let T1 finish
@@ -414,7 +414,7 @@ class TestAsyncioReentrantLock:
             try:
                 async with lock:
                     await asyncio.sleep(1)  # simulate some work
-            except asyncio.CancelledError:
+            except CancelledError:
                 cancellation_event.set()
 
         task = asyncio.create_task(task_to_cancel())
@@ -440,7 +440,7 @@ class TestAsyncioReentrantLock:
             try:
                 async with lock:  # attempt to acquire the lock
                     await asyncio.sleep(1)  # simulate some work
-            except asyncio.CancelledError:
+            except CancelledError:
                 cancellation_event.set()
 
         first_task = asyncio.create_task(task_acquiring_lock())
@@ -462,7 +462,7 @@ class TestAsyncioReentrantLock:
             async with lock:  # acquire the lock
                 try:
                     await asyncio.sleep(1)  # simulate some work
-                except asyncio.CancelledError:
+                except CancelledError:
                     cancellation_event.set()
 
         task = asyncio.create_task(task_to_cancel())
@@ -489,7 +489,7 @@ class TestAsyncioReentrantLock:
                     await asyncio.sleep(
                         random.random()  # noqa: S311
                     )  # simulate work with random duration
-            except asyncio.CancelledError:
+            except CancelledError:
                 print(f"Task {task_id} was cancelled")  # noqa: T201
                 cancellation_occurred.set()
 
@@ -559,13 +559,13 @@ class TestAsyncioReentrantLock:
         class ExceptionAsyncioReentrantLock(AsyncioReentrantLock):
             def release(self) -> NoReturn:
                 """Release the lock."""
-                raise asyncio.CancelledError
+                raise CancelledError
                 super().release()
 
         lock = ExceptionAsyncioReentrantLock()
 
         async def task() -> None:
-            with pytest.raises(asyncio.CancelledError):
+            with pytest.raises(CancelledError):
                 async with lock:
                     pass  # no action needed inside
 
@@ -620,7 +620,7 @@ class TestAsyncioReentrantLock:
 
         await t1
         await t2
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(CancelledError):
             await t3  # Here we get ValueError: <asyncio.locks.Event object at 0x7f419f7dba90 [set]> is not in deque
         # Task 3 would never acquire
         assert not task3_acquired.is_set()
@@ -745,7 +745,7 @@ class TestAsyncioReentrantLock:
         await first_acquired.wait()
         await asyncio.sleep(0)
         t2.cancel()
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(CancelledError):
             await t2
 
         await asyncio.gather(t1, t3)
