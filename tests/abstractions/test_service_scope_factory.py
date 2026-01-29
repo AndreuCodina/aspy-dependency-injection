@@ -1,17 +1,17 @@
 import pytest
 
-from aspy_dependency_injection.abstractions.keyed_service import KeyedService
-from aspy_dependency_injection.abstractions.service_scope_factory import (
-    ServiceScopeFactory,
-)
-from aspy_dependency_injection.exceptions import (
-    KeyedServiceAnyKeyUsedToResolveServiceError,
-)
-from aspy_dependency_injection.service_collection import ServiceCollection
 from tests.utils.services import (
     ServiceWithAsyncContextManagerAndNoDependencies,
     ServiceWithNoDependencies,
 )
+from wirio.abstractions.keyed_service import KeyedService
+from wirio.abstractions.service_scope_factory import (
+    ServiceScopeFactory,
+)
+from wirio.exceptions import (
+    KeyedServiceAnyKeyUsedToResolveServiceError,
+)
+from wirio.service_collection import ServiceCollection
 
 
 class TestServiceScopeFactory:
@@ -19,9 +19,7 @@ class TestServiceScopeFactory:
         services = ServiceCollection()
 
         async with services.build_service_provider() as service_provider:
-            service_scope_factory = await service_provider.get_required_service(
-                ServiceScopeFactory
-            )
+            service_scope_factory = await service_provider.get(ServiceScopeFactory)
 
             assert isinstance(service_scope_factory, ServiceScopeFactory)
 
@@ -29,18 +27,12 @@ class TestServiceScopeFactory:
         services = ServiceCollection()
 
         async with services.build_service_provider() as service_provider:
-            scope_factory_1 = await service_provider.get_required_service(
-                ServiceScopeFactory
-            )
-            scope_factory_2 = await service_provider.get_required_service(
-                ServiceScopeFactory
-            )
+            scope_factory_1 = await service_provider.get(ServiceScopeFactory)
+            scope_factory_2 = await service_provider.get(ServiceScopeFactory)
 
             async with service_provider.create_scope() as service_scope:
-                scope_factory_3 = (
-                    await service_scope.service_provider.get_required_service(
-                        ServiceScopeFactory
-                    )
+                scope_factory_3 = await service_scope.service_provider.get(
+                    ServiceScopeFactory
                 )
 
                 assert scope_factory_1 is scope_factory_2
@@ -53,9 +45,7 @@ class TestServiceScopeFactory:
         services.add_scoped(ServiceWithAsyncContextManagerAndNoDependencies)
 
         async with services.build_service_provider() as service_provider:
-            cached_scope_factory = await service_provider.get_required_service(
-                ServiceScopeFactory
-            )
+            cached_scope_factory = await service_provider.get(ServiceScopeFactory)
 
             for _ in range(3):
                 async with cached_scope_factory.create_scope() as outer_scope:
@@ -63,12 +53,12 @@ class TestServiceScopeFactory:
                         outer_scope.service_provider.create_scope() as inner_scope
                     ):
                         outer_scoped_service = (
-                            await outer_scope.service_provider.get_service(
+                            await outer_scope.service_provider.try_get(
                                 ServiceWithAsyncContextManagerAndNoDependencies
                             )
                         )
                         inner_scoped_service = (
-                            await inner_scope.service_provider.get_service(
+                            await inner_scope.service_provider.try_get(
                                 ServiceWithAsyncContextManagerAndNoDependencies
                             )
                         )
@@ -91,48 +81,44 @@ class TestServiceScopeFactory:
 
         async with (
             services.build_service_provider() as service_provider,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_a,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_b,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
         ):
             assert (
-                await scope_a.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_a.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
             assert (
-                await scope_b.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_b.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_a.service_provider.get_keyed_service(
+                await scope_a.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_b.service_provider.get_keyed_service(
+                await scope_b.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
-            service_a_1 = await scope_a.service_provider.get_keyed_service(
+            service_a_1 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_a_2 = await scope_a.service_provider.get_keyed_service(
+            service_a_2 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
 
-            service_b_1 = await scope_b.service_provider.get_keyed_service(
+            service_b_1 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_b_2 = await scope_b.service_provider.get_keyed_service(
+            service_b_2 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
@@ -151,48 +137,44 @@ class TestServiceScopeFactory:
 
         async with (
             services.build_service_provider() as service_provider,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_a,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_b,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
         ):
             assert (
-                await scope_a.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_a.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
             assert (
-                await scope_b.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_b.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_a.service_provider.get_keyed_service(
+                await scope_a.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_b.service_provider.get_keyed_service(
+                await scope_b.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
-            service_a_1 = await scope_a.service_provider.get_keyed_service(
+            service_a_1 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_a_2 = await scope_a.service_provider.get_keyed_service(
+            service_a_2 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
 
-            service_b_1 = await scope_b.service_provider.get_keyed_service(
+            service_b_1 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_b_2 = await scope_b.service_provider.get_keyed_service(
+            service_b_2 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
@@ -211,48 +193,44 @@ class TestServiceScopeFactory:
 
         async with (
             services.build_service_provider() as service_provider,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_a,
-            (
-                await service_provider.get_required_service(ServiceScopeFactory)
-            ).create_scope() as scope_b,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_a,
+            (await service_provider.get(ServiceScopeFactory)).create_scope() as scope_b,
         ):
             assert (
-                await scope_a.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_a.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
             assert (
-                await scope_b.service_provider.get_service(ServiceWithNoDependencies)
+                await scope_b.service_provider.try_get(ServiceWithNoDependencies)
                 is None
             )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_a.service_provider.get_keyed_service(
+                await scope_a.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
             with pytest.raises(KeyedServiceAnyKeyUsedToResolveServiceError):
-                await scope_b.service_provider.get_keyed_service(
+                await scope_b.service_provider.try_get_keyed(
                     service_key=KeyedService.ANY_KEY,
                     service_type=ServiceWithNoDependencies,
                 )
 
-            service_a_1 = await scope_a.service_provider.get_keyed_service(
+            service_a_1 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_a_2 = await scope_a.service_provider.get_keyed_service(
+            service_a_2 = await scope_a.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
 
-            service_b_1 = await scope_b.service_provider.get_keyed_service(
+            service_b_1 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )
-            service_b_2 = await scope_b.service_provider.get_keyed_service(
+            service_b_2 = await scope_b.service_provider.try_get_keyed(
                 service_key=service_key,
                 service_type=ServiceWithNoDependencies,
             )

@@ -1,12 +1,12 @@
 <div align="center">
-<img alt="Logo" src="https://raw.githubusercontent.com/AndreuCodina/aspy-dependency-injection/refs/heads/main/docs/logo.png" width="522" height="348">
+<img alt="Logo" src="https://raw.githubusercontent.com/AndreuCodina/wirio/refs/heads/main/docs/logo.png" width="522" height="348">
 
-[![CI](https://img.shields.io/github/actions/workflow/status/AndreuCodina/aspy-dependency-injection/main.yaml?branch=main&logo=github&label=CI)](https://github.com/AndreuCodina/aspy-dependency-injection/actions/workflows/main.yaml)
-[![Coverage status](https://coveralls.io/repos/github/AndreuCodina/aspy-dependency-injection/badge.svg?branch=main)](https://coveralls.io/github/AndreuCodina/aspy-dependency-injection?branch=main)
-[![PyPI - version](https://img.shields.io/pypi/v/aspy-dependency-injection?color=blue&label=pypi)](https://pypi.org/project/aspy-dependency-injection/)
-[![Python - versions](https://img.shields.io/pypi/pyversions/aspy-dependency-injection.svg)](https://github.com/AndreuCodina/aspy-dependency-injection)
-[![License](https://img.shields.io/github/license/AndreuCodina/aspy-dependency-injection.svg)](https://github.com/AndreuCodina/aspy-dependency-injection/blob/main/LICENSE)
-[![Documentation](https://img.shields.io/badge/📚_documentation-3D9970)](https://andreucodina.github.io/aspy-dependency-injection)
+[![CI](https://img.shields.io/github/actions/workflow/status/AndreuCodina/wirio/main.yaml?branch=main&logo=github&label=CI)](https://github.com/AndreuCodina/wirio/actions/workflows/main.yaml)
+[![Coverage status](https://coveralls.io/repos/github/AndreuCodina/wirio/badge.svg?branch=main)](https://coveralls.io/github/AndreuCodina/wirio?branch=main)
+[![PyPI - version](https://img.shields.io/pypi/v/wirio?color=blue&label=pypi)](https://pypi.org/project/wirio/)
+[![Python - versions](https://img.shields.io/pypi/pyversions/wirio.svg)](https://github.com/AndreuCodina/wirio)
+[![License](https://img.shields.io/github/license/AndreuCodina/wirio.svg)](https://github.com/AndreuCodina/wirio/blob/main/LICENSE)
+[![Documentation](https://img.shields.io/badge/📚_documentation-3D9970)](https://andreucodina.github.io/wirio)
 
 </div>
 
@@ -23,7 +23,7 @@
 ## 📦 Installation
 
 ```bash
-uv add aspy-dependency-injection
+uv add wirio
 ```
 
 ## ✨ Quickstart with FastAPI
@@ -227,4 +227,4 @@ services.add_auto_activated_singleton(MachineLearningModel)
 
 ## 📚 Documentation
 
-For more information, [check out the documentation](https://AndreuCodina.github.io/aspy-dependency-injection).
+For more information, [check out the documentation](https://AndreuCodina.github.io/wirio).

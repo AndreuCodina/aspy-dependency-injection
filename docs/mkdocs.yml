@@ -1,6 +1,6 @@
-site_name: Aspy Dependency Injection
-repo_url: https://github.com/AndreuCodina/aspy-dependency-injection
-repo_name: AndreuCodina/aspy-dependency-injection
+site_name: Wirio
+repo_url: https://github.com/AndreuCodina/wirio
+repo_name: AndreuCodina/wirio
 docs_dir: pages
 watch:
   - code
@@ -23,6 +23,7 @@ theme:
     - navigation.path
     - toc.follow
     - content.code.copy
+    - content.code.annotate
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -31,6 +32,11 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+      alternate_style: true
 plugins:
   - search
   - mkdocstrings:

@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from aspy_dependency_injection.abstractions.keyed_service import KeyedService
-from aspy_dependency_injection.annotations import FromKeyedServices, ServiceKey
-from aspy_dependency_injection.service_collection import ServiceCollection
 from tests.utils.services import ServiceWithDependencies, ServiceWithNoDependencies
+from wirio.abstractions.keyed_service import KeyedService
+from wirio.annotations import FromKeyedServices, ServiceKey
+from wirio.service_collection import ServiceCollection
 
 
 class TestServiceProvider:
@@ -14,7 +14,7 @@ class TestServiceProvider:
         async with services.build_service_provider() as service_provider:
             overridden_instance = ServiceWithNoDependencies()
 
-            resolved_before_override = await service_provider.get_required_service(
+            resolved_before_override = await service_provider.get(
                 ServiceWithNoDependencies
             )
 
@@ -23,13 +23,11 @@ class TestServiceProvider:
             with service_provider.override_service(
                 ServiceWithNoDependencies, overridden_instance
             ):
-                resolved_service = await service_provider.get_required_service(
-                    ServiceWithNoDependencies
-                )
+                resolved_service = await service_provider.get(ServiceWithNoDependencies)
 
                 assert resolved_service is overridden_instance
 
-            resolved_after_override = await service_provider.get_required_service(
+            resolved_after_override = await service_provider.get(
                 ServiceWithNoDependencies
             )
 
@@ -45,9 +43,7 @@ class TestServiceProvider:
             with service_provider.override_service(
                 ServiceWithNoDependencies, overridden_instance
             ):
-                resolved_service = await service_provider.get_required_service(
-                    ServiceWithNoDependencies
-                )
+                resolved_service = await service_provider.get(ServiceWithNoDependencies)
 
                 assert resolved_service is overridden_instance
 
@@ -59,10 +55,8 @@ class TestServiceProvider:
         async with services.build_service_provider() as service_provider:
             overridden_instance = ServiceWithNoDependencies()
 
-            resolved_before_override = (
-                await service_provider.get_required_keyed_service(
-                    service_key, ServiceWithNoDependencies
-                )
+            resolved_before_override = await service_provider.get_keyed(
+                service_key, ServiceWithNoDependencies
             )
 
             assert resolved_before_override is not overridden_instance
@@ -72,13 +66,13 @@ class TestServiceProvider:
                 ServiceWithNoDependencies,
                 overridden_instance,
             ):
-                resolved_service = await service_provider.get_required_keyed_service(
+                resolved_service = await service_provider.get_keyed(
                     service_key, ServiceWithNoDependencies
                 )
 
                 assert resolved_service is overridden_instance
 
-            resolved_after_override = await service_provider.get_required_keyed_service(
+            resolved_after_override = await service_provider.get_keyed(
                 service_key, ServiceWithNoDependencies
             )
 
@@ -97,7 +91,7 @@ class TestServiceProvider:
                 ServiceWithNoDependencies,
                 overridden_instance,
             ):
-                resolved_service = await service_provider.get_required_keyed_service(
+                resolved_service = await service_provider.get_keyed(
                     "actual_key", ServiceWithNoDependencies
                 )
 
@@ -129,7 +123,7 @@ class TestServiceProvider:
                 ServiceWithNoDependencies,
                 overridden_instance,
             ):
-                resolved_service = await service_provider.get_required_service(Service)
+                resolved_service = await service_provider.get(Service)
 
                 assert resolved_service.dependency is overridden_instance
 
@@ -147,23 +141,21 @@ class TestServiceProvider:
                 with service_provider.override_service(
                     ServiceWithNoDependencies, second_overridden_instance
                 ):
-                    resolved_service = await service_provider.get_required_service(
+                    resolved_service = await service_provider.get(
                         ServiceWithNoDependencies
                     )
 
                     assert resolved_service is second_overridden_instance
 
-                resolved_service_after_inner_override = (
-                    await service_provider.get_required_service(
-                        ServiceWithNoDependencies
-                    )
+                resolved_service_after_inner_override = await service_provider.get(
+                    ServiceWithNoDependencies
                 )
 
                 assert (
                     resolved_service_after_inner_override is first_overridden_instance
                 )
 
-            resolved_after_all_overrides = await service_provider.get_required_service(
+            resolved_after_all_overrides = await service_provider.get(
                 ServiceWithNoDependencies
             )
 
@@ -178,22 +170,18 @@ class TestServiceProvider:
         services.add_singleton(ServiceWithNoDependencies)
 
         async with services.build_service_provider() as service_provider:
-            cached_instance = await service_provider.get_required_service(
-                ServiceWithNoDependencies
-            )
+            cached_instance = await service_provider.get(ServiceWithNoDependencies)
 
             overridden_instance = ServiceWithNoDependencies()
 
             with service_provider.override_service(
                 ServiceWithNoDependencies, overridden_instance
             ):
-                resolved_service = await service_provider.get_required_service(
-                    ServiceWithNoDependencies
-                )
+                resolved_service = await service_provider.get(ServiceWithNoDependencies)
 
                 assert resolved_service is overridden_instance
 
-            resolved_after_override = await service_provider.get_required_service(
+            resolved_after_override = await service_provider.get(
                 ServiceWithNoDependencies
             )
 
@@ -206,13 +194,13 @@ class TestServiceProvider:
 
         async with services.build_service_provider() as service_provider:
             with service_provider.override_service(ServiceWithNoDependencies, None):
-                resolved_service = await service_provider.get_service(
+                resolved_service = await service_provider.try_get(
                     ServiceWithNoDependencies
                 )
 
                 assert resolved_service is None
 
-            resolved_after_override = await service_provider.get_service(
+            resolved_after_override = await service_provider.try_get(
                 ServiceWithNoDependencies
             )
 
@@ -235,9 +223,7 @@ class TestServiceProvider:
             with service_provider.override_service(
                 ServiceWithNoDependencies, overridden_instance
             ):
-                resolved_service = await service_provider.get_required_service(
-                    ServiceWithNoDependencies
-                )
+                resolved_service = await service_provider.get(ServiceWithNoDependencies)
 
                 assert resolved_service is overridden_instance
 
@@ -257,9 +243,7 @@ class TestServiceProvider:
         async with services.build_service_provider() as service_provider:
             assert len(constructed_instances) == expected_instances
 
-            resolved_service = await service_provider.get_required_service(
-                AutoActivatedService
-            )
+            resolved_service = await service_provider.get(AutoActivatedService)
 
             assert len(constructed_instances) == expected_instances
             assert resolved_service is constructed_instances[0]
@@ -282,7 +266,7 @@ class TestServiceProvider:
 
         async with services.build_service_provider() as service_provider:
             assert captured_keys == [service_key]
-            resolved_service = await service_provider.get_required_keyed_service(
+            resolved_service = await service_provider.get_keyed(
                 service_key,
                 AutoActivatedKeyedService,
             )

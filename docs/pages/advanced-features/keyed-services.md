@@ -134,7 +134,7 @@ To know which key was requested when our service was resolved, annotate a constr
 
 ```python
 from typing import Annotated
-from aspy_dependency_injection.annotations import ServiceKey
+from wirio.annotations import ServiceKey
 
 class KeyAwareCache:
     def __init__(self, key: Annotated[str, ServiceKey()]) -> None:

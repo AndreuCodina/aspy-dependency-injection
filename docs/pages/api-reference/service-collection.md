@@ -1,3 +1,3 @@
 # ServiceCollection
 
-::: aspy_dependency_injection.service_collection.ServiceCollection
+::: wirio.service_collection.ServiceCollection

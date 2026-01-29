@@ -1,7 +1,7 @@
-from aspy_dependency_injection.abstractions.base_service_provider import (
+from wirio.abstractions.base_service_provider import (
     BaseServiceProvider,
 )
-from aspy_dependency_injection.service_collection import ServiceCollection
+from wirio.service_collection import ServiceCollection
 
 
 class TestBaseServiceProvider:
@@ -9,8 +9,6 @@ class TestBaseServiceProvider:
         services = ServiceCollection()
 
         async with services.build_service_provider() as service_provider:
-            base_service_provider = await service_provider.get_required_service(
-                BaseServiceProvider
-            )
+            base_service_provider = await service_provider.get(BaseServiceProvider)
 
             assert isinstance(base_service_provider, BaseServiceProvider)

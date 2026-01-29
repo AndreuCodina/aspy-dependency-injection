@@ -1,17 +1,17 @@
-from aspy_dependency_injection.abstractions.base_service_provider import (
+from tests.utils.services import ServiceWithNoDependencies
+from wirio.abstractions.base_service_provider import (
     BaseServiceProvider,
 )
-from aspy_dependency_injection.abstractions.service_provider_is_keyed_service import (
+from wirio.abstractions.service_provider_is_keyed_service import (
     ServiceProviderIsKeyedService,
 )
-from aspy_dependency_injection.abstractions.service_provider_is_service import (
+from wirio.abstractions.service_provider_is_service import (
     ServiceProviderIsService,
 )
-from aspy_dependency_injection.abstractions.service_scope_factory import (
+from wirio.abstractions.service_scope_factory import (
     ServiceScopeFactory,
 )
-from aspy_dependency_injection.service_collection import ServiceCollection
-from tests.utils.services import ServiceWithNoDependencies
+from wirio.service_collection import ServiceCollection
 
 
 class TestServiceProviderIsService:
@@ -19,7 +19,7 @@ class TestServiceProviderIsService:
         services = ServiceCollection()
 
         async with services.build_service_provider() as service_provider:
-            service_provider_is_service = await service_provider.get_required_service(
+            service_provider_is_service = await service_provider.get(
                 ServiceProviderIsService
             )
 
@@ -32,7 +32,7 @@ class TestServiceProviderIsService:
         services.add_transient(ServiceWithNoDependencies)
 
         async with services.build_service_provider() as service_provider:
-            service_provider_is_service = await service_provider.get_required_service(
+            service_provider_is_service = await service_provider.get(
                 ServiceProviderIsService
             )
 

@@ -1,10 +1,10 @@
-from aspy_dependency_injection.service_collection import ServiceCollection
-from aspy_dependency_injection.service_provider_engine_scope import (
-    ServiceProviderEngineScope,
-)
 from tests.utils.services import (
     ServiceWithAsyncContextManagerAndNoDependencies,
     ServiceWithSyncContextManagerAndNoDependencies,
+)
+from wirio.service_collection import ServiceCollection
+from wirio.service_provider_engine_scope import (
+    ServiceProviderEngineScope,
 )
 
 
@@ -21,7 +21,7 @@ class TestServiceProviderEngineScope:
         ):
             assert isinstance(service_scope, ServiceProviderEngineScope)
 
-            resolved_service = await service_scope.get_required_service(
+            resolved_service = await service_scope.get(
                 ServiceWithSyncContextManagerAndNoDependencies
             )
 
@@ -41,7 +41,7 @@ class TestServiceProviderEngineScope:
         ):
             assert isinstance(service_scope, ServiceProviderEngineScope)
 
-            resolved_service = await service_scope.get_required_service(
+            resolved_service = await service_scope.get(
                 ServiceWithAsyncContextManagerAndNoDependencies
             )
 

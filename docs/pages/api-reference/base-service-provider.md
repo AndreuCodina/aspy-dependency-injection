@@ -1,3 +1,3 @@
 # BaseServiceProvider
 
-::: aspy_dependency_injection.service_provider.BaseServiceProvider
+::: wirio.service_provider.BaseServiceProvider
