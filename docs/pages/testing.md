@@ -29,12 +29,12 @@ As a good practice, we recommend using a fixture instead of importing `services`
 
 ```python
 @pytest.fixture
-async def services() -> AsyncGenerator[ServiceContainer]:
+async def services_fixture() -> AsyncGenerator[ServiceContainer]:
     async with services:
         yield services
 
 
-async def test_create_user(services: ServiceContainer) -> None:
+async def test_create_user(services_fixture: ServiceContainer) -> None:
     user_service = await services.get(UserService)
 
     await user_service.create_user()
@@ -46,7 +46,7 @@ We can also override a service for all tests by modifying the fixture that provi
 
 ```python
 @pytest.fixture
-async def services(mocker: MockerFixture) -> AsyncGenerator[ServiceContainer]:
+async def services_fixture(mocker: MockerFixture) -> AsyncGenerator[ServiceContainer]:
     email_service_mock = mocker.create_autospec(EmailService, instance=True)
 
     async with services:
