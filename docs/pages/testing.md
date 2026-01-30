@@ -35,7 +35,7 @@ async def services_fixture() -> AsyncGenerator[ServiceContainer]:
 
 
 async def test_create_user(services_fixture: ServiceContainer) -> None:
-    user_service = await services.get(UserService)
+    user_service = await services_fixture.get(UserService)
 
     await user_service.create_user()
 ```
