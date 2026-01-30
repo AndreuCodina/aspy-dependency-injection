@@ -43,7 +43,7 @@ Finally, we convert the service collection into a service provider, which will v
 
     To fetch dependencies from the container, we call `.get` on the container instance with the type we want to retrieve.
 
-    ```python title="notebook.py"
+    ```python title="notebook.ipynb"
     user_service = await services.get(UserService)
     ```
 
