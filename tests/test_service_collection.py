@@ -65,7 +65,7 @@ async def _inject_counter_service() -> _CounterService:
     return _CounterService()
 
 
-class TestServiceProvider:
+class TestServiceCollection:
     @pytest.mark.parametrize(
         argnames=("service_lifetime"),
         argvalues=[
