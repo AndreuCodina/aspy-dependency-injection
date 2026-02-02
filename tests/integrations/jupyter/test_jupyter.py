@@ -15,7 +15,7 @@ class TestJupyter:
                 "execute",
                 str(notebook),
             ],
-            capture_output=False,
+            capture_output=True,
             text=True,
             check=False,
         )

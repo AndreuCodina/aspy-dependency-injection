@@ -15,7 +15,7 @@ We have to use the service provider to resolve the services we want to test. The
     from wirio.integrations.fastapi import get_service_provider
 
     @pytest.fixture
-    def test_client() -> None:
+    def test_client() -> Generator[None]:
         with TestClient(app):
             yield
 
@@ -82,6 +82,7 @@ async def service_provider(mocker: MockerFixture) -> AsyncGenerator[ServiceProvi
     @pytest.fixture
     def service_provider(mocker: MockerFixture) -> Generator[ServiceProvider]:
         service_provider = get_service_provider(app)
+        email_service_mock = mocker.create_autospec(EmailService, instance=True)
 
         with service_provider.override_service(EmailService, email_service_mock):
             yield service_provider
