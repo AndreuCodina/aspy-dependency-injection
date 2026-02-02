@@ -17,8 +17,6 @@ jobs:
     name: Check code
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write # Allow Coveralls to comment on the PR
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -43,9 +41,11 @@ jobs:
         continue-on-error: true
 
   test:
-    name: Test Python=${{ matrix.python-version }}, Resolution=${{ matrix.resolution-strategy }}, Extra=${{ matrix.extra }}
+    name: Test (Python=${{ matrix.python-version }}, Resolution=${{ matrix.resolution-strategy }}, Extra=${{ matrix.extra }})
     needs: check-code
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Allow Coveralls to comment on the PR
     strategy:
       matrix:
         python-version: ["3.13", "3.14"]
