@@ -18,7 +18,10 @@ try:
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 except ImportError:
-    pass
+    APIRouter = None
+    Depends = None
+    FastAPI = None
+    TestClient = None
 
 
 @pytest.mark.skipif(
