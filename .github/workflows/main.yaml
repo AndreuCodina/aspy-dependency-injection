@@ -13,6 +13,8 @@ jobs:
   test:
     name: Test
     uses: ./.github/workflows/_test.yaml
+    permissions:
+      contents: write
 
   publish-documentation:
     needs: test

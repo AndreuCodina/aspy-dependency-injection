@@ -9,7 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-
 jobs:
   check-code:
     name: Check code
@@ -42,5 +41,7 @@ jobs:
 
   test:
     name: Test
-    needs: check-code
     uses: ./.github/workflows/_test.yaml
+    needs: check-code
+    permissions:
+      contents: write
