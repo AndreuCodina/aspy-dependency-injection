@@ -1,6 +1,6 @@
 import inspect
 import typing
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from typing import TYPE_CHECKING, Final, cast, overload
 
 from wirio._service_lookup._typed_type import TypedType
@@ -34,10 +34,17 @@ class ServiceCollection:
     def __init__(self) -> None:
         self._descriptors = []
         self._service_provider = None
+        self._validate_on_build = True
 
-    def build_service_provider(self) -> ServiceProvider:
+    def build_service_provider(
+        self, validate_scopes: bool = True, validate_on_build: bool = True
+    ) -> ServiceProvider:
         """Create a :class:`ServiceProvider` containing services from the provided :class:`ServiceCollection`."""
-        self._service_provider = ServiceProvider(self._descriptors)
+        self._service_provider = ServiceProvider(
+            descriptors=self._descriptors,
+            validate_scopes=validate_scopes,
+            validate_on_build=validate_on_build,
+        )
         return self._service_provider
 
     @overload
@@ -869,3 +876,6 @@ class ServiceCollection:
         from wirio.integrations._fastapi_dependency_injection import (  # noqa: PLC0415
             FastApiDependencyInjection,
         )
+
+    def __iter__(self) -> Iterator[ServiceDescriptor]:
+        return iter(self._descriptors)
