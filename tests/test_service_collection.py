@@ -1854,3 +1854,24 @@ class TestServiceCollection:
                 )
             else:
                 services.enable_singleton_auto_activation(ServiceWithNoDependencies)
+
+    async def test_resolve_service_when_registering_parent_class_as_service_type_and_returning_child_using_implementation_factory(
+        self,
+    ) -> None:
+        class Parent:
+            pass
+
+        class Child(Parent):
+            pass
+
+        def inject_child() -> Child:
+            return Child()
+
+        services = ServiceCollection()
+        services.add_transient(Parent, inject_child)
+
+        async with services.build_service_provider() as service_provider:
+            resolved_service = await service_provider.get_required_service(Parent)
+
+            assert isinstance(resolved_service, Parent)
+            assert isinstance(resolved_service, Child)
