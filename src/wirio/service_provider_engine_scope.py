@@ -33,7 +33,7 @@ class ServiceProviderEngineScope(BaseServiceProvider, ServiceScope):
     _disposables: list[object] | None
     _resolved_services: Final[dict[ServiceCacheKey, object | None]]
 
-    # A reentrant lock is needed when the lifetime is scoped and a service has a context manager
+    # A reentrant lock is needed when the lifetime is scoped and the service has a context manager
     _resolved_services_lock: Final[AsyncioReentrantLock]
 
     def __init__(

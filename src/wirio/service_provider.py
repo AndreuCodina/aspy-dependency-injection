@@ -74,6 +74,7 @@ class ServiceProvider(
     """Provider that resolves services."""
 
     _descriptors: Final[list["ServiceDescriptor"]]
+    _pending_descriptors: Final[list["ServiceDescriptor"]]
     _call_site_validator: Final[CallSiteValidator | None]
     _validate_on_build: Final[bool]
     _root: Final[ServiceProviderEngineScope]
@@ -83,7 +84,7 @@ class ServiceProvider(
     ]
     _is_disposed: bool
     _call_site_factory: Final[CallSiteFactory]
-    _is_fully_initialized: bool
+    _is_aenter_executed: bool
 
     def __init__(
         self,
@@ -91,8 +92,8 @@ class ServiceProvider(
         validate_scopes: bool,
         validate_on_build: bool,
     ) -> None:
-        self._descriptors = descriptors
-
+        self._descriptors = []
+        self._pending_descriptors = descriptors.copy()
         self._call_site_validator = CallSiteValidator() if validate_scopes else None
         self._validate_on_build = validate_on_build
         self._root = ServiceProviderEngineScope(
@@ -102,7 +103,7 @@ class ServiceProvider(
         self._service_accessors = AsyncConcurrentDictionary()
         self._is_disposed = False
         self._call_site_factory = CallSiteFactory(descriptors)
-        self._is_fully_initialized = False
+        self._is_aenter_executed = False
 
     @property
     def root(self) -> ServiceProviderEngineScope:
@@ -115,7 +116,7 @@ class ServiceProvider(
     @property
     def is_fully_initialized(self) -> bool:
         """Indicate whether the provider is fully initialized (useful for Jupyter notebooks, which don't work well with context managers)."""
-        return self._is_fully_initialized
+        return self._is_aenter_executed and len(self._pending_descriptors) == 0
 
     @property
     def call_site_validator(self) -> CallSiteValidator | None:
@@ -223,6 +224,10 @@ class ServiceProvider(
         """Retrieve the override call site for a given identifier if present."""
         return self._call_site_factory.get_overridden_call_site(service_identifier)
 
+    def add_descriptors(self, descriptors: list["ServiceDescriptor"]) -> None:
+        self._pending_descriptors.extend(descriptors.copy())
+        self._call_site_factory.add_descriptors(self._pending_descriptors)
+
     async def _create_service_accessor(
         self, service_identifier: ServiceIdentifier
     ) -> _ServiceAccessor:
@@ -278,6 +283,9 @@ class ServiceProvider(
 
     async def _add_built_in_services(self) -> None:
         """Add built-in services that aren't part of the list of service descriptors."""
+        if self._is_aenter_executed:
+            return
+
         await self._call_site_factory.add(
             ServiceIdentifier.from_service_type(
                 TypedType.from_type(BaseServiceProvider)
@@ -313,7 +321,7 @@ class ServiceProvider(
 
     async def _activate_auto_activated_singletons(self) -> None:
         """Activate all singletons registered with auto_activate=True."""
-        for service_descriptor in self._descriptors:
+        for service_descriptor in self._pending_descriptors:
             if not service_descriptor.auto_activate:
                 continue
 
@@ -325,11 +333,11 @@ class ServiceProvider(
             )
 
     async def _fully_initialize_if_not_fully_initialized(self) -> None:
-        if not self._is_fully_initialized:
+        if not self.is_fully_initialized:
             await self.__aenter__()
 
     def _ensure_is_fully_initialized(self, method_name: str) -> None:
-        if not self._is_fully_initialized:
+        if not self.is_fully_initialized:
             raise ServiceProviderNotFullyInitializedError(method_name)
 
     async def _validate_service(self, service_descriptor: "ServiceDescriptor") -> None:
@@ -363,14 +371,16 @@ class ServiceProvider(
         await self._add_built_in_services()
         await self._activate_auto_activated_singletons()
         await self._validate_services()
-        self._is_fully_initialized = True
+        self._descriptors.extend(self._pending_descriptors)
+        self._pending_descriptors.clear()
+        self._is_aenter_executed = True
         return self
 
     async def _validate_services(self) -> None:
         if self._validate_on_build:
             exceptions: list[Exception] | None = None
 
-            for service_descriptor in self._descriptors:
+            for service_descriptor in self._pending_descriptors:
                 try:
                     await self._validate_service(service_descriptor)
                 except Exception as exception:  # noqa: BLE001

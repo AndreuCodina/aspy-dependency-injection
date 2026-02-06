@@ -1,12 +1,16 @@
-from collections.abc import Generator
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import AbstractAsyncContextManager, contextmanager
 from types import TracebackType
-from typing import Self, final, override
+from typing import TYPE_CHECKING, Final, Self, final, override
 
 from wirio.abstractions.service_scope import ServiceScope
 from wirio.exceptions import ServiceContainerNotBuiltError
 from wirio.service_collection import ServiceCollection
+from wirio.service_lifetime import ServiceLifetime
 from wirio.service_provider import ServiceProvider
+
+if TYPE_CHECKING:
+    from wirio.service_descriptor import ServiceDescriptor
 
 
 @final
@@ -15,10 +19,12 @@ class ServiceContainer(
 ):
     """Collection of resolvable services."""
 
+    _pending_descriptors: Final[list["ServiceDescriptor"]]
     _service_provider: ServiceProvider | None
 
     def __init__(self) -> None:
         super().__init__()
+        self._pending_descriptors = []
         self._service_provider = None
 
     @property
@@ -104,10 +110,42 @@ class ServiceContainer(
         ):
             yield
 
+    @override
+    def _add[TService](
+        self,
+        lifetime: ServiceLifetime,
+        service_type: type[TService] | None,
+        implementation_factory: Callable[..., Awaitable[TService]]
+        | Callable[..., TService]
+        | None,
+        implementation_type: type | None,
+        implementation_instance: object | None,
+        service_key: object | None,
+        auto_activate: bool,
+    ) -> None:
+        super()._add(
+            lifetime=lifetime,
+            service_type=service_type,
+            implementation_factory=implementation_factory,
+            implementation_type=implementation_type,
+            implementation_instance=implementation_instance,
+            service_key=service_key,
+            auto_activate=auto_activate,
+        )
+
+        if self.service_provider is not None:
+            added_descriptor = self._descriptors[-1]
+            self._pending_descriptors.append(added_descriptor)
+
     async def _get_service_provider(self) -> ServiceProvider:
         if self._service_provider is None:
             self._service_provider = self.build_service_provider()
             await self._service_provider.__aenter__()
+
+        if len(self._pending_descriptors) > 0:
+            self._service_provider.add_descriptors(self._pending_descriptors)
+            self._descriptors.extend(self._pending_descriptors)
+            self._pending_descriptors.clear()
 
         return self._service_provider
 

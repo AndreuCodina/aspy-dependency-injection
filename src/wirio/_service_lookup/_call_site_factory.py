@@ -229,6 +229,10 @@ class CallSiteFactory(ServiceProviderIsKeyedService, ServiceProviderIsService):
             service_key=service_identifier.service_key,
         )
 
+    def add_descriptors(self, descriptors: list[ServiceDescriptor]) -> None:
+        self._descriptors.extend(descriptors)
+        self._populate()
+
     async def _create_call_site(
         self, service_identifier: ServiceIdentifier, call_site_chain: CallSiteChain
     ) -> ServiceCallSite | None:
