@@ -392,3 +392,203 @@ class TestServiceContainer:
             built_service_provider = services.build_service_provider()
 
             assert expected_service_provider is built_service_provider
+
+    async def test_add_singleton_service_after_initialization(self) -> None:
+        constructed_instances: list[object] = []
+
+        class SingletonService:
+            def __init__(self) -> None:
+                constructed_instances.append(self)
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add singleton after container is initialized
+            services.add_singleton(SingletonService)
+
+            # First resolution
+            service1 = await services.get_required_service(SingletonService)
+            assert isinstance(service1, SingletonService)
+            assert len(constructed_instances) == 1
+
+            # Second resolution should return the same instance
+            service2 = await services.get_required_service(SingletonService)
+            assert service2 is service1
+            assert len(constructed_instances) == 1
+
+    async def test_add_scoped_service_after_initialization(self) -> None:
+        constructed_instances: list[object] = []
+
+        class ScopedService:
+            def __init__(self) -> None:
+                constructed_instances.append(self)
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add scoped service after container is initialized
+            services.add_scoped(ScopedService)
+
+            # Create first scope
+            async with services.create_scope() as scope1:
+                service1 = await scope1.get_required_service(ScopedService)
+                assert isinstance(service1, ScopedService)
+                assert len(constructed_instances) == 1
+
+                # Same instance within scope
+                service1_again = await scope1.get_required_service(ScopedService)
+                assert service1_again is service1
+                assert len(constructed_instances) == 1
+
+            # Create second scope - should get different instance
+            async with services.create_scope() as scope2:
+                service2 = await scope2.get_required_service(ScopedService)
+                assert isinstance(service2, ScopedService)
+                assert service2 is not service1
+                assert len(constructed_instances) == 2  # noqa: PLR2004
+
+    async def test_add_service_with_dependencies_after_initialization(self) -> None:
+        constructed_instances: list[object] = []
+
+        class DependentService:
+            def __init__(
+                self, dependency: ServiceWithNoDependencies
+            ) -> None:
+                self.dependency = dependency
+                constructed_instances.append(self)
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add service with dependencies after initialization
+            services.add_transient(DependentService)
+
+            # Resolve and verify dependencies are injected
+            service = await services.get_required_service(DependentService)
+            assert isinstance(service, DependentService)
+            assert isinstance(service.dependency, ServiceWithNoDependencies)
+            assert len(constructed_instances) == 1
+
+    async def test_add_factory_based_service_after_initialization(self) -> None:
+        constructed_instances: list[object] = []
+        factory_call_count = [0]
+
+        class FactoryService:
+            def __init__(self) -> None:
+                constructed_instances.append(self)
+
+        def service_factory() -> FactoryService:
+            factory_call_count[0] += 1
+            return FactoryService()
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add factory-based service after initialization
+            services.add_transient(FactoryService, service_factory)
+
+            # Verify factory is called
+            service = await services.get_required_service(FactoryService)
+            assert isinstance(service, FactoryService)
+            assert factory_call_count[0] == 1
+            assert len(constructed_instances) == 1
+
+    async def test_add_multiple_services_sequentially_after_initialization(
+        self,
+    ) -> None:
+        class Service1:
+            pass
+
+        class Service2:
+            def __init__(self, service1: Service1) -> None:
+                self.service1 = service1
+
+        class Service3:
+            def __init__(self, service2: Service2) -> None:
+                self.service2 = service2
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add services one by one
+            services.add_singleton(Service1)
+            service1 = await services.get_required_service(Service1)
+            assert isinstance(service1, Service1)
+
+            services.add_singleton(Service2)
+            service2 = await services.get_required_service(Service2)
+            assert isinstance(service2, Service2)
+            assert isinstance(service2.service1, Service1)
+
+            services.add_singleton(Service3)
+            service3 = await services.get_required_service(Service3)
+            assert isinstance(service3, Service3)
+            assert isinstance(service3.service2, Service2)
+            assert isinstance(service3.service2.service1, Service1)
+
+    async def test_add_keyed_singleton_after_initialization(self) -> None:
+        constructed_instances: list[object] = []
+
+        class KeyedService:
+            def __init__(self) -> None:
+                constructed_instances.append(self)
+
+        service_key = "singleton_key"
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Add keyed singleton after initialization
+            services.add_keyed_singleton(service_key, KeyedService)
+
+            # First resolution
+            service1 = await services.get_required_keyed_service(
+                service_key, KeyedService
+            )
+            assert isinstance(service1, KeyedService)
+            assert len(constructed_instances) == 1
+
+            # Second resolution should return same instance
+            service2 = await services.get_required_keyed_service(
+                service_key, KeyedService
+            )
+            assert service2 is service1
+            assert len(constructed_instances) == 1
+
+    async def test_add_service_from_instance_after_initialization(self) -> None:
+        class InstanceService:
+            pass
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Create an instance and add it to the container
+            instance = InstanceService()
+            services.add_singleton(InstanceService, instance)
+
+            # Should get the exact instance we added
+            resolved = await services.get_required_service(InstanceService)
+            assert resolved is instance
+
+    async def test_add_service_with_validation_after_initialization(self) -> None:
+        class ValidatedService:
+            def __init__(self, dependency: ServiceWithNoDependencies) -> None:
+                self.dependency = dependency
+
+        services = ServiceContainer()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services:
+            # Adding service after initialization should still validate dependencies
+            services.add_transient(ValidatedService)
+
+            # Resolution should work correctly
+            service = await services.get_required_service(ValidatedService)
+            assert isinstance(service, ValidatedService)
+            assert isinstance(service.dependency, ServiceWithNoDependencies)
