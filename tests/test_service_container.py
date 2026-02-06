@@ -162,6 +162,78 @@ class TestServiceContainer:
         else:
             services.add_transient(ServiceWithNoDependencies)
 
+        if is_keyed_service:
+            resolved_service = await services.get_required_keyed_service(
+                service_key, ServiceWithNoDependencies
+            )
+        else:
+            resolved_service = await services.get_required_service(
+                ServiceWithNoDependencies
+            )
+
+        assert isinstance(resolved_service, ServiceWithNoDependencies)
+        assert services.service_provider is not None
+        assert len(list(services)) == 1
+
+        if is_keyed_service:
+            services.add_keyed_transient(service_key, AdditionalService)
+        else:
+            services.add_transient(AdditionalService)
+
+        assert services.service_provider is not None
+        assert len(list(services)) == expected_descriptors
+
+        if is_keyed_service:
+            resolved_service = await services.get_required_keyed_service(
+                service_key, AdditionalService
+            )
+        else:
+            resolved_service = await services.get_required_service(AdditionalService)
+
+        assert isinstance(resolved_service, AdditionalService)
+        assert len(constructed_instances) == 1
+        assert resolved_service is constructed_instances[0]
+        assert services.service_provider is not None
+        assert len(list(services)) == expected_descriptors
+
+        if is_keyed_service:
+            resolved_service = await services.get_required_keyed_service(
+                service_key, AdditionalService
+            )
+        else:
+            resolved_service = await services.get_required_service(AdditionalService)
+
+        assert isinstance(resolved_service, AdditionalService)
+        assert len(constructed_instances) == 2  # noqa: PLR2004
+        assert resolved_service is constructed_instances[1]
+        assert services.service_provider is not None
+        assert len(list(services)) == expected_descriptors
+
+    @pytest.mark.parametrize(
+        argnames="is_keyed_service",
+        argvalues=[
+            (True),
+            (False),
+        ],
+    )
+    async def test_resolve_service_added_after_initialization_using_context_manager(
+        self, is_keyed_service: bool
+    ) -> None:
+        constructed_instances: list[object] = []
+
+        class AdditionalService:
+            def __init__(self) -> None:
+                constructed_instances.append(self)
+
+        expected_descriptors = 2
+        service_key = "key"
+        services = ServiceContainer()
+
+        if is_keyed_service:
+            services.add_keyed_transient(service_key, ServiceWithNoDependencies)
+        else:
+            services.add_transient(ServiceWithNoDependencies)
+
         async with services:
             if is_keyed_service:
                 resolved_service = await services.get_required_keyed_service(
@@ -239,27 +311,6 @@ class TestServiceContainer:
             assert resolved_service is constructed_instances[0]
             assert len(constructed_instances) == 1
 
-    async def test_resolve_keyed_service_added_after_initialization(self) -> None:
-        class AdditionalKeyedService:
-            pass
-
-        services = ServiceContainer()
-        services.add_transient(ServiceWithNoDependencies)
-        service_key = "key"
-        assert services.service_provider is None
-
-        await services.get_required_service(ServiceWithNoDependencies)
-        assert services.service_provider is not None
-        services.add_keyed_transient(service_key, AdditionalKeyedService)
-
-        assert services.service_provider is not None
-
-        resolved_service = await services.get_required_keyed_service(
-            service_key, AdditionalKeyedService
-        )
-
-        assert isinstance(resolved_service, AdditionalKeyedService)
-
     async def test_auto_initialize_service_after_context_manager(self) -> None:
         constructed_instances: list[object] = []
 
@@ -311,7 +362,7 @@ class TestServiceContainer:
 
         await services.get_required_service(ServiceWithDependencies)
         assert services.service_provider is not None
-        assert len(services.service_provider._pending_descriptors) == 0  # noqa: SLF001
+        assert len(services.service_provider.pending_descriptors) == 0
         assert len(list(services)) == expected_descriptors
 
     async def test_accumulate_pending_descriptors_after_initialization(
@@ -324,12 +375,12 @@ class TestServiceContainer:
 
         await services.get_required_service(ServiceWithNoDependencies)
         assert services.service_provider is not None
-        assert len(services.service_provider._pending_descriptors) == 0  # noqa: SLF001
+        assert len(services.service_provider.pending_descriptors) == 0
         assert len(list(services)) == 1
 
         services.add_transient(ServiceWithDependencies)
         assert services.service_provider is not None
-        assert len(services.service_provider._pending_descriptors) == 1  # noqa: SLF001
+        assert len(services.service_provider.pending_descriptors) == 1
         assert len(list(services)) == 2  # noqa: PLR2004
 
     async def test_return_service_provider_is_it_is_already_built(self) -> None:

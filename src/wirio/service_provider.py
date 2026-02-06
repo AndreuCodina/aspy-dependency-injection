@@ -120,6 +120,10 @@ class ServiceProvider(
     def call_site_validator(self) -> CallSiteValidator | None:
         return self._call_site_validator
 
+    @property
+    def pending_descriptors(self) -> list[ServiceDescriptor]:
+        return self._pending_descriptors
+
     @override
     async def get_service_object(self, service_type: TypedType) -> object | None:
         if self._is_disposed:
