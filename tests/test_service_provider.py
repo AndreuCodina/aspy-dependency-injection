@@ -12,6 +12,7 @@ from wirio.exceptions import (
     ObjectDisposedError,
     ScopedInSingletonError,
     ScopedResolvedFromRootError,
+    ServiceProviderNotFullyInitializedError,
 )
 from wirio.service_collection import ServiceCollection
 
@@ -538,3 +539,27 @@ class TestServiceProvider:
 
         with pytest.raises(ObjectDisposedError):
             await service_provider.get_required_keyed_service(service_key, KeyedService)
+
+    async def test_fail_when_overriding_not_initialized_service_provider(self) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        service_provider = services.build_service_provider()
+
+        with pytest.raises(ServiceProviderNotFullyInitializedError):  # noqa: SIM117
+            with service_provider.override_service(
+                ServiceWithNoDependencies, ServiceWithNoDependencies()
+            ):
+                pass
+
+    async def fail_when_creating_scope_after_disposal(self) -> None:
+        services = ServiceCollection()
+        services.add_transient(ServiceWithNoDependencies)
+
+        async with services.build_service_provider() as service_provider:
+            await service_provider.get_required_service(ServiceWithNoDependencies)
+
+        assert service_provider.is_disposed
+
+        with pytest.raises(ServiceProviderNotFullyInitializedError):
+            service_provider.create_scope()
