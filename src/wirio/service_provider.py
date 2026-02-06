@@ -152,7 +152,6 @@ class ServiceProvider(
         if self._is_disposed:
             raise ObjectDisposedError
 
-        self._ensure_is_fully_initialized(self.create_scope.__name__)
         return ServiceProviderEngineScope(service_provider=self, is_root_scope=False)
 
     async def aclose(self) -> None:

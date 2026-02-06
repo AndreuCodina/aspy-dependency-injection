@@ -180,6 +180,9 @@ class ServiceProviderEngineScope(BaseServiceProvider, ServiceScope):
 
     @override
     async def __aenter__(self) -> Self:
+        if not self._root_provider.is_fully_initialized:
+            await self._root_provider.__aenter__()
+
         return self
 
     @override

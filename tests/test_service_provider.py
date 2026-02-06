@@ -12,7 +12,6 @@ from wirio.exceptions import (
     ObjectDisposedError,
     ScopedInSingletonError,
     ScopedResolvedFromRootError,
-    ServiceProviderNotFullyInitializedError,
 )
 from wirio.service_collection import ServiceCollection
 
@@ -374,19 +373,6 @@ class TestServiceProvider:
         await service_provider.get_required_service(ServiceWithNoDependencies)
         assert service_provider.is_fully_initialized
         await service_provider.aclose()
-
-    async def test_fail_when_calling_some_methods_before_fully_initialized(
-        self,
-    ) -> None:
-        services = ServiceCollection()
-        services.add_transient(ServiceWithNoDependencies)
-
-        service_provider = services.build_service_provider()
-
-        assert not service_provider.is_fully_initialized
-
-        with pytest.raises(ServiceProviderNotFullyInitializedError):
-            service_provider.create_scope()
 
     async def test_service_provider_fully_initialized_when_called_with_context_manager(
         self,
