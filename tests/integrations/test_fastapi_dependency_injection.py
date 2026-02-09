@@ -10,7 +10,6 @@ from tests.utils.services import ServiceWithNoDependencies
 from wirio._utils._extra_dependencies import ExtraDependencies
 from wirio.annotations import FromKeyedServices, FromServices
 from wirio.exceptions import CannotResolveServiceFromEndpointError
-from wirio.integrations.fastapi import get_services
 from wirio.service_collection import ServiceCollection
 from wirio.service_container import ServiceContainer
 from wirio.service_provider import ServiceProvider
@@ -19,20 +18,21 @@ if TYPE_CHECKING:
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 
-    from wirio.integrations.fastapi import get_service_provider
+    from wirio.integrations.fastapi import get_service_provider, get_services
 else:
     APIRouter = None
     Depends = None
     FastAPI = None
     TestClient = None
     get_service_provider = None
+    get_services = None
 
 try:
     ExtraDependencies.import_fastapi()
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 
-    from wirio.integrations.fastapi import get_service_provider
+    from wirio.integrations.fastapi import get_service_provider, get_services
 except ImportError:
     pass
 
