@@ -17,7 +17,7 @@ We have to use the service provider to resolve the services we want to test. The
     @pytest.fixture
     def service_provider() -> Generator[ServiceProvider]:
         with TestClient(app):
-            yield get_service_provider(app):
+            yield get_service_provider(app)
     ```
 
 === "Console application"

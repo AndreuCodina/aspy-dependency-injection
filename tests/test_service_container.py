@@ -363,7 +363,7 @@ class TestServiceContainer:
         assert len(services.service_provider.pending_descriptors) == 1
         assert len(list(services)) == 2  # noqa: PLR2004
 
-    async def test_return_service_provider_is_it_is_already_built(self) -> None:
+    async def test_return_service_provider_if_it_is_already_built(self) -> None:
         services = ServiceContainer()
         services.add_transient(ServiceWithNoDependencies)
 
