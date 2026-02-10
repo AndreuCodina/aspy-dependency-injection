@@ -18,21 +18,21 @@ if TYPE_CHECKING:
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 
-    from wirio.integrations.fastapi import get_service_provider, get_services
+    from wirio.integrations.fastapi import get_service_container, get_service_provider
 else:
     APIRouter = None
     Depends = None
     FastAPI = None
     TestClient = None
     get_service_provider = None
-    get_services = None
+    get_service_container = None
 
 try:
     ExtraDependencies.import_fastapi()
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 
-    from wirio.integrations.fastapi import get_service_provider, get_services
+    from wirio.integrations.fastapi import get_service_container, get_service_provider
 except ImportError:
     pass
 
@@ -263,10 +263,10 @@ class TestFastApiDependencyInjection:
 
             assert response.status_code == HTTPStatus.OK
 
-    def test_get_services(self) -> None:
+    def test_get_service_container(self) -> None:
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-            services = get_services(app)
+            services = get_service_container(app)
             assert isinstance(services, ServiceContainer)
             yield
 

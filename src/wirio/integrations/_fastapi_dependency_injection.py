@@ -36,9 +36,9 @@ _current_request: ContextVar[Request | WebSocket] = ContextVar(
 class FastApiDependencyInjection:
     @classmethod
     def setup(
-        cls, app: FastAPI, services: "ServiceContainer|ServiceCollection"
+        cls, app: FastAPI, services: "ServiceCollection|ServiceContainer"
     ) -> None:
-        app.state.wirio_services = services
+        cls._set_wirio_services(app, services)
         app.add_middleware(_WirioAsgiMiddleware)  # ty: ignore[invalid-argument-type]
         cls._update_lifespan(app)
         cls._inject_routes(app.routes)
@@ -49,7 +49,7 @@ class FastApiDependencyInjection:
 
         @asynccontextmanager
         async def new_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
-            services: ServiceCollection = app.state.wirio_services
+            services = cls._get_wirio_services(app)
 
             async with services.build_service_provider() as service_provider:
                 app.state.wirio_service_provider = service_provider
@@ -165,6 +165,16 @@ class FastApiDependencyInjection:
             )
 
         return parameter_service
+
+    @classmethod
+    def _get_wirio_services(cls, app: FastAPI) -> "ServiceCollection|ServiceContainer":
+        return app.state.wirio_services
+
+    @classmethod
+    def _set_wirio_services(
+        cls, app: FastAPI, services: "ServiceCollection|ServiceContainer"
+    ) -> None:
+        app.state.wirio_services = services
 
 
 @final

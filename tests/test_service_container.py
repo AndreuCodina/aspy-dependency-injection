@@ -508,3 +508,19 @@ class TestServiceContainer:
             assert isinstance(service3, Service3)
             assert isinstance(service3.service2, Service2)
             assert isinstance(service3.service2.service1, Service1)
+
+    async def test_resolve_same_service_with_different_implementation_instance_added_after_build(
+        self,
+    ) -> None:
+        service_instance_1 = ServiceWithNoDependencies()
+        service_instance_2 = ServiceWithNoDependencies()
+        services = ServiceContainer()
+        services.add_singleton(ServiceWithNoDependencies, service_instance_1)
+
+        async with services:
+            resolved_service_1 = await services.get(ServiceWithNoDependencies)
+            assert resolved_service_1 is service_instance_1
+
+            services.add_singleton(ServiceWithNoDependencies, service_instance_2)
+            resolved_service_2 = await services.get(ServiceWithNoDependencies)
+            assert resolved_service_2 is service_instance_2
