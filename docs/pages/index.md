@@ -1,7 +1,7 @@
 # Introduction
 
 <div align="center">
-<img alt="Logo" src="https://raw.githubusercontent.com/AndreuCodina/wirio/refs/heads/main/docs/logo.png" width="522" height="522">
+<img alt="Logo" src="https://raw.githubusercontent.com/AndreuCodina/wirio/refs/heads/main/docs/logo.png" width="450" height="450">
 </div>
 
 ## What is Dependency Injection
