@@ -35,7 +35,7 @@ We have to use the service provider to resolve the services we want to test. The
     The next step is creating a fixture to inject the service provider.
 
     ```python
-    from main import services
+    from main import configure_services
 
     @pytest.fixture
     async def service_provider() -> AsyncGenerator[ServiceProvider]:
@@ -95,6 +95,8 @@ We can also override a service for all tests by modifying the fixture that provi
         services = configure_services()
 
         async with services.build_service_provider() as service_provider:
+            email_service_mock = mocker.create_autospec(EmailService, instance=True)
+
             with service_provider.override_service(EmailService, email_service_mock):
                 yield service_provider
     ```

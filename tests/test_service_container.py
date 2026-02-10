@@ -525,7 +525,7 @@ class TestServiceContainer:
             resolved_service_2 = await services.get(ServiceWithNoDependencies)
             assert resolved_service_2 is service_instance_2
 
-    async def test_replace_singleton_registration_wth_different_implementation_type_after_initialization(
+    async def test_replace_singleton_registration_with_different_implementation_type_after_initialization(
         self,
     ) -> None:
         services = ServiceContainer()
