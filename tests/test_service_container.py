@@ -524,3 +524,110 @@ class TestServiceContainer:
             services.add_singleton(ServiceWithNoDependencies, service_instance_2)
             resolved_service_2 = await services.get(ServiceWithNoDependencies)
             assert resolved_service_2 is service_instance_2
+
+    async def test_replace_singleton_registration_wth_different_implementation_type_after_initialization(
+        self,
+    ) -> None:
+        services = ServiceContainer()
+
+        class BaseService:
+            pass
+
+        class InitialService(BaseService):
+            pass
+
+        class ReplacementService(BaseService):
+            pass
+
+        services.add_singleton(BaseService, InitialService)
+
+        try:
+            first_instance = await services.get(BaseService)
+            assert isinstance(first_instance, InitialService)
+
+            services.add_singleton(BaseService, ReplacementService)
+
+            replacement_instance = await services.get(BaseService)
+            assert isinstance(replacement_instance, ReplacementService)
+            assert replacement_instance is not first_instance
+
+            repeated_instance = await services.get(BaseService)
+            assert repeated_instance is replacement_instance
+        finally:
+            await services.aclose()
+
+    async def test_replace_keyed_singleton_registration_after_initialization(
+        self,
+    ) -> None:
+        service_key = "key"
+        services = ServiceContainer()
+
+        class BaseService:
+            pass
+
+        class InitialService(BaseService):
+            pass
+
+        class ReplacementService(BaseService):
+            pass
+
+        services.add_keyed_singleton(service_key, BaseService, InitialService)
+
+        try:
+            first_instance = await services.get_keyed(service_key, BaseService)
+            assert isinstance(first_instance, InitialService)
+
+            services.add_keyed_singleton(service_key, BaseService, ReplacementService)
+
+            replacement_instance = await services.get_keyed(service_key, BaseService)
+            assert isinstance(replacement_instance, ReplacementService)
+            assert replacement_instance is not first_instance
+
+            repeated_instance = await services.get_keyed(service_key, BaseService)
+            assert repeated_instance is replacement_instance
+        finally:
+            await services.aclose()
+
+    async def test_not_reexecute_previous_singleton_factory_after_replacement(
+        self,
+    ) -> None:
+        services = ServiceContainer()
+        first_factory_invocations = 0
+        second_factory_invocations = 0
+
+        class BaseService:
+            pass
+
+        class InitialService(BaseService):
+            pass
+
+        class ReplacementService(BaseService):
+            pass
+
+        def first_factory() -> BaseService:
+            nonlocal first_factory_invocations
+            first_factory_invocations += 1
+            return InitialService()
+
+        def second_factory() -> BaseService:
+            nonlocal second_factory_invocations
+            second_factory_invocations += 1
+            return ReplacementService()
+
+        services.add_singleton(BaseService, first_factory)
+
+        try:
+            initial_instance = await services.get(BaseService)
+            assert isinstance(initial_instance, InitialService)
+            assert first_factory_invocations == 1
+            assert second_factory_invocations == 0
+
+            services.add_singleton(BaseService, second_factory)
+
+            replacement_instance = await services.get(BaseService)
+            assert isinstance(replacement_instance, ReplacementService)
+            assert replacement_instance is not initial_instance
+            assert first_factory_invocations == 1
+            assert second_factory_invocations == 1
+        finally:
+            await services.aclose()

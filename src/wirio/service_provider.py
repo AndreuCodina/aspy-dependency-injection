@@ -8,6 +8,7 @@ from typing import Final, Self, final, override
 from wirio._service_lookup._async_concurrent_dictionary import (
     AsyncConcurrentDictionary,
 )
+from wirio._service_lookup._asyncio_reentrant_lock import AsyncioReentrantLock
 from wirio._service_lookup._call_site_chain import CallSiteChain
 from wirio._service_lookup._call_site_factory import CallSiteFactory
 from wirio._service_lookup._call_site_runtime_resolver import CallSiteRuntimeResolver
@@ -79,6 +80,11 @@ class ServiceProvider(
     _service_accessors: Final[
         AsyncConcurrentDictionary[ServiceIdentifier, _ServiceAccessor]
     ]
+    _service_accessor_identifiers_by_type: Final[
+        dict[TypedType, set[ServiceIdentifier]]
+    ]
+    _invalid_service_accessor_types: Final[set[TypedType]]
+    _service_accessor_invalidation_lock: Final[AsyncioReentrantLock]
     _is_disposed: bool
     _call_site_factory: Final[CallSiteFactory]
     _is_aenter_executed: bool
@@ -98,6 +104,9 @@ class ServiceProvider(
         )
         self._engine = self._get_engine()
         self._service_accessors = AsyncConcurrentDictionary()
+        self._service_accessor_identifiers_by_type = {}
+        self._invalid_service_accessor_types = set()
+        self._service_accessor_invalidation_lock = AsyncioReentrantLock()
         self._is_disposed = False
         self._call_site_factory = CallSiteFactory(descriptors)
         self._is_aenter_executed = False
@@ -165,6 +174,9 @@ class ServiceProvider(
         service_identifier: ServiceIdentifier,
         service_provider_engine_scope: ServiceProviderEngineScope,
     ) -> object | None:
+        await self._invalidate_service_accessors_if_needed(
+            service_identifier.service_type
+        )
         override_call_site = self.get_overridden_call_site(service_identifier)
 
         if override_call_site is not None:
@@ -174,6 +186,7 @@ class ServiceProvider(
         service_accessor = await self._service_accessors.get_or_add(
             key=service_identifier, value_factory=self._create_service_accessor
         )
+        self._register_service_accessor_identifier(service_identifier)
         self._on_resolve(service_accessor.call_site, service_provider_engine_scope)
         return await service_accessor.realized_service(service_provider_engine_scope)
 
@@ -226,6 +239,7 @@ class ServiceProvider(
     def add_descriptor(self, descriptor: ServiceDescriptor) -> None:
         self._pending_descriptors.append(descriptor)
         self._call_site_factory.add_descriptor(descriptor)
+        self._mark_service_accessor_dirty(descriptor.service_type)
 
     async def fully_initialize_if_not_fully_initialized(self) -> None:
         if not self.is_fully_initialized:
@@ -280,6 +294,36 @@ class ServiceProvider(
         return _ServiceAccessor(
             call_site=call_site, realized_service=realized_service_returning_none
         )
+
+    def _register_service_accessor_identifier(
+        self, service_identifier: ServiceIdentifier
+    ) -> None:
+        identifiers = self._service_accessor_identifiers_by_type.setdefault(
+            service_identifier.service_type, set()
+        )
+        identifiers.add(service_identifier)
+
+    def _mark_service_accessor_dirty(self, service_type: TypedType) -> None:
+        self._invalid_service_accessor_types.add(service_type)
+
+    async def _invalidate_service_accessors_if_needed(
+        self, service_type: TypedType
+    ) -> None:
+        if service_type not in self._invalid_service_accessor_types:
+            return
+
+        async with self._service_accessor_invalidation_lock:
+            if service_type not in self._invalid_service_accessor_types:
+                return
+
+            service_identifiers = self._service_accessor_identifiers_by_type.pop(
+                service_type, set()
+            )
+
+            for service_identifier in service_identifiers:
+                await self._service_accessors.try_remove(service_identifier)
+
+            self._invalid_service_accessor_types.remove(service_type)
 
     def _get_engine(self) -> ServiceProviderEngine:
         return RuntimeServiceProviderEngine.INSTANCE
