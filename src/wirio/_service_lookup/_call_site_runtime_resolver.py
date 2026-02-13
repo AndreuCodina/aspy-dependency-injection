@@ -296,7 +296,7 @@ class CallSiteRuntimeResolver(CallSiteVisitor[RuntimeResolverContext, object | N
             value = await self._visit_call_site(service_call_site, argument)
             sequence.append(value)
 
-        return sequence
+        return tuple(sequence)
 
     @override
     def _visit_service_provider(

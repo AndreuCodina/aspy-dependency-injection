@@ -90,7 +90,7 @@ def add_sqlmodel(services: ServiceCollection) -> None:
 add_sqlmodel(services)
 ```
 
-We could also have the next extensions:
+We could also have the following extensions:
 
 ```python
 add_api_versioning(services)
