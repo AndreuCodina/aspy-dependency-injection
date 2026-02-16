@@ -10,7 +10,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  publish-documentation:
+    name: Publish documentation
+    uses: ./.github/workflows/_publish_documentation.yaml
+    permissions:
+      contents: write
+
   release:
+    needs: publish-documentation
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository

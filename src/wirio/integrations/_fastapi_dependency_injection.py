@@ -33,7 +33,7 @@ _current_request: ContextVar[Request | WebSocket] = ContextVar(
 
 
 @final
-class FastApiDependencyInjection:
+class FastapiDependencyInjection:
     @classmethod
     def setup(
         cls, app: FastAPI, services: "ServiceCollection|ServiceContainer"

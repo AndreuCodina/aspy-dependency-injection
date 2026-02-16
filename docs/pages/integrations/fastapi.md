@@ -1,8 +1,15 @@
 # FastAPI integration
 
+## Benefits
+
+- Use Wirio's dependency injection in FastAPI.
+- Use FastAPI with a framework-agnostic dependency injection.
+- Easily testable services.
+- Transparent integration instead of referencing module-based singletons.
+
 ## Installation
 
-While we can install Wirio with `uv add wirio`, it's recommended to add the `fastapi` extra to ensure the installed FastAPI version is compatible.
+To use the FastAPI integration, add the `fastapi` extra to automatically install the required compatible dependencies.
 
 ```bash
 uv add wirio[fastapi]
