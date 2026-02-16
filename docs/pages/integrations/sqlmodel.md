@@ -40,7 +40,7 @@ We only have to provide the connection string, and Wirio will take care of the r
 ```python hl_lines="3"
 services = ServiceCollection()
 services.add_sqlmodel(
-	connection_string="postgresql+asyncpg://<user>:<password>@<host>:<port>/<database>"
+    connection_string="postgresql+asyncpg://<user>:<password>@<host>:<port>/<database>"
 )
 ```
 
@@ -59,8 +59,8 @@ Then, we can use it in the most easy way possible:
 
 ```python
 class UserService:
-	def __init__(self, sql_session: AsyncSession):
-		self.sql_session = sql_session
+    def __init__(self, sql_session: AsyncSession):
+        self.sql_session = sql_session
 ```
 
 ## Synchronous setup
@@ -76,7 +76,7 @@ We only have to provide the connection string, and Wirio will take care of the r
 ```python hl_lines="3"
 services = ServiceCollection()
 services.add_sync_sqlmodel(
-	connection_string="postgresql+psycopg2://<user>:<password>@<host>:<port>/<database>"
+    connection_string="postgresql+psycopg2://<user>:<password>@<host>:<port>/<database>"
 )
 ```
 
@@ -96,6 +96,6 @@ Then, we can use it in the most easy way possible:
 
 ```python
 class UserService:
-	def __init__(self, sql_session: Session):
-		self.sql_session = sql_session
+    def __init__(self, sql_session: Session):
+        self.sql_session = sql_session
 ```
