@@ -18,11 +18,13 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
     from wirio.integrations._fastapi_dependency_injection import (
-        FastApiDependencyInjection,
+        FastapiDependencyInjection,
     )
+    from wirio.integrations._sqlmodel_integration import SqlmodelIntegration
 else:
     FastAPI = None
-    FastApiDependencyInjection = None
+    FastapiDependencyInjection = None
+    SqlmodelIntegration = None
 
 
 class ServiceCollection:
@@ -690,8 +692,23 @@ class ServiceCollection:
 
     def configure_fastapi(self, app: FastAPI) -> None:
         """Configure the FastAPI application to use dependency injection using the services from this service collection."""
-        self._import_fastapi()
-        FastApiDependencyInjection.setup(app, self)
+        ExtraDependencies.ensure_fastapi_is_installed()
+        global FastapiDependencyInjection  # noqa: PLW0603
+        from wirio.integrations._fastapi_dependency_injection import (  # noqa: PLC0415
+            FastapiDependencyInjection,
+        )
+
+        FastapiDependencyInjection.setup(app, self)
+
+    def add_sqlmodel(self, connection_string: str) -> None:
+        """Add asynchronous SQLModel services."""
+        self._ensure_sqlmodel_is_installed()
+        SqlmodelIntegration.add_async_services(self, connection_string)
+
+    def add_sync_sqlmodel(self, connection_string: str) -> None:
+        """Add synchronous SQLModel services."""
+        self._ensure_sqlmodel_is_installed()
+        SqlmodelIntegration.add_sync_services(self, connection_string)
 
     def _add_from_overloaded_constructor[TService](
         self,
@@ -876,11 +893,11 @@ class ServiceCollection:
 
         return return_type
 
-    def _import_fastapi(self) -> None:
-        ExtraDependencies.import_fastapi()
-        global FastApiDependencyInjection  # noqa: PLW0603
-        from wirio.integrations._fastapi_dependency_injection import (  # noqa: PLC0415
-            FastApiDependencyInjection,
+    def _ensure_sqlmodel_is_installed(self) -> None:
+        ExtraDependencies.ensure_sqlmodel_is_installed()
+        global SqlmodelIntegration  # noqa: PLW0603
+        from wirio.integrations._sqlmodel_integration import (  # noqa: PLC0415
+            SqlmodelIntegration,
         )
 
     def __iter__(self) -> Iterator[ServiceDescriptor]:

@@ -1,6 +1,6 @@
 # Get all services of a type
 
-Sometimes you want to resolve all services registered for a given type. For example, you might want to resolve all implementations of an interface.
+Sometimes we want to resolve all services registered for a given type. For example, we might want to resolve all implementations of an interface.
 
 ```python hl_lines="9"
 services.add_transient(NotificationService, EmailService)
@@ -16,7 +16,7 @@ class UserService:
         self.notification_services = notification_services
 ```
 
-You could also resolve all implementations with a specific key.
+We could also resolve all implementations with a specific key.
 
 ```python hl_lines="9-11"
 services.add_keyed_transient("key", EmailService)
@@ -34,4 +34,4 @@ class UserService:
         self.notification_services = notification_services
 ```
 
-Using a `ServiceProvider`, you can resolve all services of a type using `get_services` and `get_keyed_services`.
+Using a `ServiceProvider`, we can resolve all services of a type using `get_services` and `get_keyed_services`.

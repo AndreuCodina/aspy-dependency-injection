@@ -4,7 +4,6 @@ from contextlib import AbstractAsyncContextManager, contextmanager
 from types import TracebackType
 from typing import TYPE_CHECKING, Self, final
 
-from wirio._utils._extra_dependencies import ExtraDependencies
 from wirio.abstractions.service_scope import ServiceScope
 from wirio.exceptions import ServiceContainerNotBuiltError
 from wirio.service_collection import ServiceCollection
@@ -13,13 +12,8 @@ from wirio.service_provider import ServiceProvider
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
-
-    from wirio.integrations._fastapi_dependency_injection import (
-        FastApiDependencyInjection,
-    )
 else:
     FastAPI = None
-    FastApiDependencyInjection = None
 
 
 @final
@@ -145,16 +139,7 @@ class ServiceContainer(
     @typing.override
     def configure_fastapi(self, app: FastAPI) -> None:
         """Configure the FastAPI application to use dependency injection using the services from this service container."""
-        self._import_fastapi()
-        FastApiDependencyInjection.setup(app, self)
-
-    @typing.override
-    def _import_fastapi(self) -> None:
-        ExtraDependencies.import_fastapi()
-        global FastApiDependencyInjection  # noqa: PLW0603
-        from wirio.integrations._fastapi_dependency_injection import (  # noqa: PLC0415
-            FastApiDependencyInjection,
-        )
+        super().configure_fastapi(app)
 
     @typing.override
     def _add[TService](

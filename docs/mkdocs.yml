@@ -75,6 +75,7 @@ nav:
       - Service validation: advanced-features/service-validation.md
   - Integrations:
       - FastAPI: integrations/fastapi.md
+      - SQLModel: integrations/sqlmodel.md
   - API reference:
       - ServiceCollection: api-reference/service-collection.md
       - ServiceScope: api-reference/service-scope.md

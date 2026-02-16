@@ -24,11 +24,10 @@ else:
     Depends = None
     FastAPI = None
     TestClient = None
-    get_service_provider = None
     get_service_container = None
+    get_service_provider = None
 
 try:
-    ExtraDependencies.import_fastapi()
     from fastapi import APIRouter, Depends, FastAPI
     from fastapi.testclient import TestClient
 
@@ -39,9 +38,9 @@ except ImportError:
 
 @pytest.mark.skipif(
     not ExtraDependencies.is_fastapi_installed(),
-    reason="wirio[fastapi] is not installed",
+    reason=ExtraDependencies.FASTAPI_NOT_INSTALLED_ERROR_MESSAGE,
 )
-class TestFastApiDependencyInjection:
+class TestFastapiDependencyInjection:
     @pytest.fixture
     def app(self) -> FastAPI:
         app = FastAPI()
