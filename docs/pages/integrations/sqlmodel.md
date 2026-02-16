@@ -68,21 +68,21 @@ class UserService:
 `add_sync_sqlmodel` configures SQLModel for synchronous workloads and registers the following services:
 
 - `Engine` as singleton
-- `sessionmaker[AsyncSession]` as singleton
+- `sessionmaker[Session]` as singleton
 - `Session` as scoped
 
 We only have to provide the connection string, and Wirio will take care of the rest.
 
 ```python hl_lines="3"
 services = ServiceCollection()
-services.add_sqlmodel(
+services.add_sync_sqlmodel(
 	connection_string="postgresql+psycopg2://<user>:<password>@<host>:<port>/<database>"
 )
 ```
 
 We're using the `psycopg2` driver (`uv add psycopg2-binary`) in the connection string, but we can use any driver supported by SQLModel.
 
-### Imports to resolve registered async services
+### Imports to resolve registered synchronous services
 
 It's important to import the correct types to resolve the registered services.
 
