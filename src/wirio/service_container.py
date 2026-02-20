@@ -30,8 +30,9 @@ class ServiceContainer(
 
     @typing.override
     def build_service_provider(
-        self, validate_scopes: bool = True, validate_on_build: bool = True
+        self, validate_scopes: bool = False, validate_on_build: bool = True
     ) -> ServiceProvider:
+        """Create a :class:`ServiceProvider` containing services from the this :class:`ServiceContainer`."""
         if self._service_provider is not None:
             return self._service_provider
 
