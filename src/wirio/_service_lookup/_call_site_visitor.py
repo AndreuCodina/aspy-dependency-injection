@@ -14,9 +14,6 @@ from wirio._service_lookup._constant_call_site import (
 from wirio._service_lookup._constructor_call_site import (
     ConstructorCallSite,
 )
-from wirio._service_lookup._sync_generator_factory_call_site import (
-    GeneratorFactoryCallSite,
-)
 from wirio._service_lookup._sequence_call_site import SequenceCallSite
 from wirio._service_lookup._service_call_site import (
     ServiceCallSite,
@@ -26,6 +23,9 @@ from wirio._service_lookup._service_provider_call_site import (
 )
 from wirio._service_lookup._sync_factory_call_site import (
     SyncFactoryCallSite,
+)
+from wirio._service_lookup._sync_generator_factory_call_site import (
+    GeneratorFactoryCallSite,
 )
 from wirio._service_lookup.call_site_result_cache_location import (
     CallSiteResultCacheLocation,

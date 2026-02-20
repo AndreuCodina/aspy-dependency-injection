@@ -9,13 +9,13 @@ from wirio._service_lookup._async_generator_factory_call_site import (
 from wirio._service_lookup._call_site_visitor import CallSiteVisitor
 from wirio._service_lookup._constant_call_site import ConstantCallSite
 from wirio._service_lookup._constructor_call_site import ConstructorCallSite
-from wirio._service_lookup._sync_generator_factory_call_site import (
-    GeneratorFactoryCallSite,
-)
 from wirio._service_lookup._sequence_call_site import SequenceCallSite
 from wirio._service_lookup._service_call_site import ServiceCallSite
 from wirio._service_lookup._service_provider_call_site import ServiceProviderCallSite
 from wirio._service_lookup._sync_factory_call_site import SyncFactoryCallSite
+from wirio._service_lookup._sync_generator_factory_call_site import (
+    GeneratorFactoryCallSite,
+)
 from wirio._service_lookup._typed_type import TypedType
 from wirio._service_lookup.service_cache_key import ServiceCacheKey
 from wirio.abstractions.service_scope import ServiceScope

@@ -26,9 +26,6 @@ from wirio._service_lookup._constant_call_site import (
 from wirio._service_lookup._constructor_call_site import (
     ConstructorCallSite,
 )
-from wirio._service_lookup._sync_generator_factory_call_site import (
-    GeneratorFactoryCallSite,
-)
 from wirio._service_lookup._parameter_information import (
     ParameterInformation,
 )
@@ -47,6 +44,9 @@ from wirio._service_lookup._supports_context_manager import (
 )
 from wirio._service_lookup._sync_factory_call_site import (
     SyncFactoryCallSite,
+)
+from wirio._service_lookup._sync_generator_factory_call_site import (
+    GeneratorFactoryCallSite,
 )
 from wirio._service_lookup._typed_type import TypedType
 from wirio.annotations import FromKeyedServicesInjectable
