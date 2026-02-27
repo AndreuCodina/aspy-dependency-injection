@@ -9,6 +9,7 @@ from typing import Annotated, Self, final, override
 
 import pytest
 from pydantic import BaseModel
+from pytest_mock import MockerFixture
 
 from tests.utils.services import (
     DisposeViewer,
@@ -2377,12 +2378,13 @@ class TestServiceCollection:
 
             assert str(exception_info.value) == expected_error_message
 
-    async def test_access_typed_configuration(self) -> None:
+    async def test_access_typed_configuration(self, mocker: MockerFixture) -> None:
         class ApplicationSettings(BaseModel):
             test_wirio_field: str
 
         expected_test_field = "field value"
-        os.environ["TEST_WIRIO_FIELD"] = expected_test_field
+
+        mocker.patch.dict(os.environ, {"TEST_WIRIO_FIELD": expected_test_field})
         services = ServiceCollection()
 
         configuration = services.configuration[ApplicationSettings]

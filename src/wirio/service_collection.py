@@ -32,7 +32,7 @@ class ServiceCollection:
     """Collection of service descriptors provided during configuration."""
 
     _descriptors: Final[list[ServiceDescriptor]]
-    _configuration: Final[ConfigurationManager]
+    _configuration: ConfigurationManager | None
 
     def __init__(self) -> None:
         self._descriptors = []
@@ -41,6 +41,9 @@ class ServiceCollection:
 
     @property
     def configuration(self) -> ConfigurationManager:
+        if self._configuration is None:
+            self._configuration = self._create_configuration()
+
         return self._configuration
 
     def build_service_provider(

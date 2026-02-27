@@ -68,7 +68,9 @@ class ConfigurationManager(ConfigurationBuilder):
 
             if isinstance(value, WirioUndefined):
                 if not field_info.is_required():
-                    values[field_name] = field_info.default
+                    values[field_name] = field_info.get_default(
+                        call_default_factory=True
+                    )
                 else:
                     error_message = (
                         f"Missing configuration value for key '{field_name}'"

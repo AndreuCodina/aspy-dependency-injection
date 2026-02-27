@@ -1,4 +1,4 @@
-from typing import Any, final, override
+from typing import final, override
 
 import pytest
 from pydantic import BaseModel
@@ -25,9 +25,9 @@ class _DictionaryConfigurationProvider(ConfigurationProvider):
 
 @final
 class _StaticConfigurationSource(ConfigurationSource):
-    _values: dict[str, Any | None]
+    _values: dict[str, str | None]
 
-    def __init__(self, values: dict[str, Any | None]) -> None:
+    def __init__(self, values: dict[str, str | None]) -> None:
         self._values = values
 
     @override
@@ -37,13 +37,13 @@ class _StaticConfigurationSource(ConfigurationSource):
 
 class _Settings(BaseModel):
     app_name: str
-    port: int
+    port: str
 
 
 class TestConfigurationManager:
     def test_create_model_from_configuration_values(self) -> None:
         expected_app_name = "wirio"
-        expected_port = 8080
+        expected_port = "8080"
         configuration_manager = ConfigurationManager()
         configuration_manager.add(
             _StaticConfigurationSource(
@@ -59,7 +59,22 @@ class TestConfigurationManager:
 
     async def test_add_source_when_event_loop_is_running(self) -> None:
         expected_app_name = "wirio"
-        expected_port = 8080
+        expected_port = "8080"
+        configuration_manager = ConfigurationManager()
+        configuration_manager.add(
+            _StaticConfigurationSource(
+                {"app_name": expected_app_name, "port": expected_port}
+            )
+        )
+
+        settings = configuration_manager[_Settings]
+
+        assert settings.app_name == expected_app_name
+        assert settings.port == expected_port
+
+    def test_add_source_when_event_loop_is_not_running(self) -> None:
+        expected_app_name = "wirio"
+        expected_port = "8080"
         configuration_manager = ConfigurationManager()
         configuration_manager.add(
             _StaticConfigurationSource(
@@ -74,11 +89,11 @@ class TestConfigurationManager:
 
     def test_override_values_with_last_source(self) -> None:
         expected_app_name = "wirio"
-        expected_port = 9090
+        expected_port = "9090"
 
         configuration_manager = ConfigurationManager()
         configuration_manager.add(
-            _StaticConfigurationSource({"app_name": "wirio", "port": 8080})
+            _StaticConfigurationSource({"app_name": "wirio", "port": "8080"})
         )
         configuration_manager.add(_StaticConfigurationSource({"port": expected_port}))
 
@@ -116,7 +131,7 @@ class TestConfigurationManager:
 
     def test_convert_source_names_to_snake_case(self) -> None:
         expected_app_name = "wirio"
-        expected_port = 8080
+        expected_port = "8080"
         configuration_manager = ConfigurationManager()
         configuration_manager.add(
             _StaticConfigurationSource(
@@ -134,7 +149,7 @@ class TestConfigurationManager:
 
         configuration_manager = ConfigurationManager()
         source1 = _StaticConfigurationSource({"app_name": "wirio"})
-        source2 = _StaticConfigurationSource({"port": 8080})
+        source2 = _StaticConfigurationSource({"port": "8080"})
         configuration_manager.add(source1)
         configuration_manager.add(source2)
 
