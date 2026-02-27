@@ -14,8 +14,8 @@ from wirio.service_collection import ServiceCollection
 
 
 class ApplicationSettings(BaseModel):
-	app_name: str
-	port: int
+    app_name: str
+    port: int
 
 
 services = ServiceCollection()
@@ -35,8 +35,8 @@ from pydantic import BaseModel
 
 
 class ApplicationSettings(BaseModel):
-	app_name: str
-	port: int | None = None
+    app_name: str
+    port: int | None = None
 ```
 
 In this example, `port` defaults to `None` when not present.
@@ -57,7 +57,7 @@ from wirio.service_collection import ServiceCollection
 
 
 class ApplicationSettings(BaseModel):
-	database_connection_string: str
+    database_connection_string: str
 
 
 class DatabaseClient:
