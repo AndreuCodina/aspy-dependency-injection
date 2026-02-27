@@ -24,7 +24,7 @@ settings = services.configuration[ApplicationSettings]
 
 Wirio maps model field names to configuration keys using snake case conventions.
 
-For example, the `APP_NAME` environment variable it's read as `app_name`.
+For example, the `APP_NAME` environment variable is read as `app_name`.
 
 ## Defaults and required values
 
