@@ -1335,10 +1335,7 @@ class ServiceCollection:
 
                 resolved_current_frame_path = current_frame_path.resolve()
 
-                if (
-                    resolved_current_frame_path != package_root
-                    and package_root not in resolved_current_frame_path.parents
-                ):
+                if package_root not in resolved_current_frame_path.parents:
                     if self._is_python_runtime_path(resolved_current_frame_path):
                         found_only_runtime_external_frames = True
                         stack_frame = stack_frame.f_back

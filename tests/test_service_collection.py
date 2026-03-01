@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator, Generator, Sequence
@@ -2407,13 +2408,13 @@ class TestServiceCollection:
         assert environment.environment_name == expected_environment_name
 
     def test_get_content_root_path_from_services_defined_in_current_file(self) -> None:
-        expected_content_root_path = str(Path.cwd() / "tests")
+        expected_content_root_path = str((Path.cwd() / "tests").resolve())
         services = ServiceCollection()
 
         assert services.environment.content_root_path == expected_content_root_path
 
     def test_get_content_root_path_from_services_defined_in_another_file(self) -> None:
-        expected_content_root_path = str(Path.cwd() / "tests/utils")
+        expected_content_root_path = str((Path.cwd() / "tests/utils").resolve())
         services = create_test_services()
 
         assert services.environment.content_root_path == expected_content_root_path
@@ -2421,7 +2422,7 @@ class TestServiceCollection:
     def test_get_content_root_path_from_services_called_from_nested_function(
         self,
     ) -> None:
-        expected_content_root_path = str(Path.cwd() / "tests")
+        expected_content_root_path = str((Path.cwd() / "tests").resolve())
 
         def create_services() -> ServiceCollection:
             def nested_create_services() -> ServiceCollection:
@@ -2438,7 +2439,10 @@ class TestServiceCollection:
         self, mocker: MockerFixture
     ) -> None:
         expected_content_root_path = str(Path.cwd().resolve())
-        mocker.patch("wirio.service_collection.inspect.currentframe", return_value=None)
+        mocker.patch(
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=None,
+        )
 
         services = ServiceCollection()
 
@@ -2458,7 +2462,8 @@ class TestServiceCollection:
         current_frame.f_back = notebook_frame
 
         mocker.patch(
-            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=current_frame,
         )
 
         services = ServiceCollection()
@@ -2487,7 +2492,8 @@ class TestServiceCollection:
         current_frame.f_back = skipped_frame
 
         mocker.patch(
-            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=current_frame,
         )
 
         services = ServiceCollection()
@@ -2510,7 +2516,8 @@ class TestServiceCollection:
         current_frame.f_back = runtime_frame
 
         mocker.patch(
-            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=current_frame,
         )
         mocker.patch.object(
             ServiceCollection,
@@ -2545,7 +2552,8 @@ class TestServiceCollection:
         current_frame.f_back = package_frame
 
         mocker.patch(
-            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=current_frame,
         )
         mocker.patch.object(
             ServiceCollection,
@@ -2573,7 +2581,8 @@ class TestServiceCollection:
         current_frame.f_back = package_frame
 
         mocker.patch(
-            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+            f"{ServiceCollection.__module__}.{inspect.__name__}.{inspect.currentframe.__name__}",
+            return_value=current_frame,
         )
 
         services = ServiceCollection()

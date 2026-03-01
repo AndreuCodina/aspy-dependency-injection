@@ -63,7 +63,7 @@ class TestJupyter:
         assert output == expected_content_root_path
 
     def test_get_content_root_path_with_services_defined_in_another_file(self) -> None:
-        expected_content_root_path = str(Path.cwd() / "tests/utils")
+        expected_content_root_path = str((Path.cwd() / "tests/utils").resolve())
         current_path = Path(__file__).parent.resolve()
         notebook = (
             current_path
