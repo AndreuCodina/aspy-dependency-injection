@@ -2599,3 +2599,4 @@ class TestServiceCollection:
             )
 
             assert isinstance(host_environment, HostEnvironment)
+            assert host_environment is services.environment
