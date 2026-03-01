@@ -4,7 +4,8 @@ from abc import ABC
 from collections.abc import AsyncGenerator, Generator, Sequence
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from dataclasses import dataclass
-from types import TracebackType
+from pathlib import Path
+from types import FrameType, TracebackType
 from typing import Annotated, Self, final, override
 
 import pytest
@@ -22,6 +23,7 @@ from tests.utils.services import (
     ServiceWithOptionalDependency,
     ServiceWithOptionalDependencyWithDefault,
     ServiceWithSyncContextManagerAndNoDependencies,
+    create_test_services,
 )
 from wirio._service_lookup._typed_type import TypedType
 from wirio.abstractions.base_service_provider import BaseServiceProvider
@@ -2403,3 +2405,177 @@ class TestServiceCollection:
         environment = services.environment
 
         assert environment.environment_name == expected_environment_name
+
+    def test_get_content_root_path_from_services_defined_in_current_file(self) -> None:
+        expected_content_root_path = str(Path.cwd() / "tests")
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_get_content_root_path_from_services_defined_in_another_file(self) -> None:
+        expected_content_root_path = str(Path.cwd() / "tests/utils")
+        services = create_test_services()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_get_content_root_path_from_services_called_from_nested_function(
+        self,
+    ) -> None:
+        expected_content_root_path = str(Path.cwd() / "tests")
+
+        def create_services() -> ServiceCollection:
+            def nested_create_services() -> ServiceCollection:
+                return ServiceCollection()
+
+            return nested_create_services()
+
+        assert (
+            create_services().environment.content_root_path
+            == expected_content_root_path
+        )
+
+    def test_get_current_path_when_current_frame_is_none(
+        self, mocker: MockerFixture
+    ) -> None:
+        expected_content_root_path = str(Path.cwd().resolve())
+        mocker.patch("wirio.service_collection.inspect.currentframe", return_value=None)
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_get_content_root_path_from_notebook_frame(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        notebook_file = tmp_path / "notebook.ipynb"
+        notebook_file.touch()
+        expected_content_root_path = str(notebook_file.parent.resolve())
+
+        notebook_frame = mocker.create_autospec(FrameType, instance=True)
+        notebook_frame.f_globals = {"__vsc_ipynb_file__": str(notebook_file)}
+
+        current_frame = mocker.create_autospec(FrameType, instance=True)
+        current_frame.f_back = notebook_frame
+
+        mocker.patch(
+            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+        )
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_skip_frame_with_non_existing_filename_and_continue_to_next_frame(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        notebook_file = tmp_path / "notebook.ipynb"
+        notebook_file.touch()
+        expected_content_root_path = str(notebook_file.parent.resolve())
+
+        missing_file = tmp_path / "missing_file.py"
+
+        notebook_frame = mocker.create_autospec(FrameType, instance=True)
+        notebook_frame.f_globals = {"__vsc_ipynb_file__": str(notebook_file)}
+        notebook_frame.f_back = None
+
+        skipped_frame = mocker.create_autospec(FrameType, instance=True)
+        skipped_frame.f_globals = {}
+        skipped_frame.f_code.co_filename = str(missing_file)
+        skipped_frame.f_back = notebook_frame
+
+        current_frame = mocker.create_autospec(FrameType, instance=True)
+        current_frame.f_back = skipped_frame
+
+        mocker.patch(
+            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+        )
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_return_current_working_directory_when_only_runtime_frames_are_found(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        expected_content_root_path = str(Path.cwd().resolve())
+        runtime_file = tmp_path / "runtime_file.py"
+        runtime_file.touch()
+
+        runtime_frame = mocker.create_autospec(FrameType, instance=True)
+        runtime_frame.f_globals = {}
+        runtime_frame.f_code.co_filename = str(runtime_file)
+        runtime_frame.f_back = None
+
+        current_frame = mocker.create_autospec(FrameType, instance=True)
+        current_frame.f_back = runtime_frame
+
+        mocker.patch(
+            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+        )
+        mocker.patch.object(
+            ServiceCollection,
+            ServiceCollection._is_python_runtime_path.__name__,  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
+            autospec=True,
+            return_value=True,
+        )
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_return_current_working_directory_when_runtime_frame_is_found_after_package_frame(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        expected_content_root_path = str(Path.cwd().resolve())
+        package_file = Path(ServiceCollection.__init__.__code__.co_filename).resolve()
+        runtime_file = tmp_path / "runtime_file.py"
+        runtime_file.touch()
+
+        runtime_frame = mocker.create_autospec(FrameType, instance=True)
+        runtime_frame.f_globals = {}
+        runtime_frame.f_code.co_filename = str(runtime_file)
+        runtime_frame.f_back = None
+
+        package_frame = mocker.create_autospec(FrameType, instance=True)
+        package_frame.f_globals = {}
+        package_frame.f_code.co_filename = str(package_file)
+        package_frame.f_back = runtime_frame
+
+        current_frame = mocker.create_autospec(FrameType, instance=True)
+        current_frame.f_back = package_frame
+
+        mocker.patch(
+            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+        )
+        mocker.patch.object(
+            ServiceCollection,
+            ServiceCollection._is_python_runtime_path.__name__,  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
+            autospec=True,
+            return_value=True,
+        )
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
+
+    def test_return_frame_filename_parent_when_only_package_frames_are_found(
+        self, mocker: MockerFixture
+    ) -> None:
+        package_file = Path(ServiceCollection.__init__.__code__.co_filename).resolve()
+        expected_content_root_path = str(package_file.parent.resolve())
+
+        package_frame = mocker.create_autospec(FrameType, instance=True)
+        package_frame.f_globals = {}
+        package_frame.f_code.co_filename = str(package_file)
+        package_frame.f_back = None
+
+        current_frame = mocker.create_autospec(FrameType, instance=True)
+        current_frame.f_back = package_frame
+
+        mocker.patch(
+            "wirio.service_collection.inspect.currentframe", return_value=current_frame
+        )
+
+        services = ServiceCollection()
+
+        assert services.environment.content_root_path == expected_content_root_path
