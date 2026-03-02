@@ -25,7 +25,7 @@ class TestExtraDependencies:
                 str(exception_info) == ExtraDependencies.ensure_sqlmodel_is_installed()
             )
 
-    def test_fail_when_importing_azure_key_valt_when_not_installed(
+    def test_fail_when_importing_azure_key_vault_when_not_installed(
         self, mocker: MockerFixture
     ) -> None:
         mocker.patch.dict(
