@@ -1,12 +1,33 @@
-from typing import final, override
+from typing import TYPE_CHECKING, Any, final, override
 
 import pytest
 from pydantic import BaseModel
+from pytest_mock import MockerFixture
 
+from wirio._utils._extra_dependencies import ExtraDependencies
 from wirio.configuration.configuration_builder import ConfigurationBuilder
 from wirio.configuration.configuration_manager import ConfigurationManager
 from wirio.configuration.configuration_provider import ConfigurationProvider
 from wirio.configuration.configuration_source import ConfigurationSource
+
+if TYPE_CHECKING:
+    from azure.identity.aio import DefaultAzureCredential
+
+    from wirio.configuration.azure_key_vault.azure_key_vault_configuration_source import (
+        AzureKeyVaultConfigurationSource,
+    )
+else:
+    DefaultAzureCredential = Any
+    AzureKeyVaultConfigurationSource = Any
+
+try:
+    from azure.identity.aio import DefaultAzureCredential
+
+    from wirio.configuration.azure_key_vault.azure_key_vault_configuration_source import (
+        AzureKeyVaultConfigurationSource,
+    )
+except ImportError:
+    pass
 
 
 @final
@@ -158,3 +179,30 @@ class TestConfigurationManager:
         assert len(sources) == expected_sources
         assert sources[0] is source1
         assert sources[1] is source2
+
+    @pytest.mark.skipif(
+        not ExtraDependencies.is_azure_key_vault_installed(),
+        reason=ExtraDependencies.AZURE_KEY_VAULT_NOT_INSTALLED_ERROR_MESSAGE,
+    )
+    def test_add_azure_key_vault(self, mocker: MockerFixture) -> None:
+        vault_url = "https://example.vault.azure.net/"
+        credential = mocker.create_autospec(DefaultAzureCredential, instance=True)
+        credential.__aenter__.return_value = credential
+        credential.__aexit__.return_value = None
+        provider = mocker.create_autospec(ConfigurationProvider, instance=True)
+        provider.load.return_value = None
+        configuration_source_patch = mocker.patch.object(
+            AzureKeyVaultConfigurationSource,
+            AzureKeyVaultConfigurationSource.build.__name__,
+            autospec=True,
+            return_value=provider,
+        )
+        configuration_manager = ConfigurationManager(content_root_path="")
+
+        configuration_manager.add_azure_key_vault(url=vault_url, credential=credential)
+
+        assert len(configuration_manager.sources) == 1
+        assert isinstance(
+            configuration_manager.sources[0], AzureKeyVaultConfigurationSource
+        )
+        configuration_source_patch.assert_called_once()
