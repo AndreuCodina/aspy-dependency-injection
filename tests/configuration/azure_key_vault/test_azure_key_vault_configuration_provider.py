@@ -44,36 +44,40 @@ class TestAzureKeyVaultConfigurationProvider:
         self.vault_url = "https://example.vault.azure.net"
 
     async def test_load_enabled_secrets(self, mocker: MockerFixture) -> None:
-        credential = mocker.create_autospec(DefaultAzureCredential, instance=True)
-        credential.__aenter__.return_value = credential
-        credential.__aexit__.return_value = None
+        default_azure_credential_mock = mocker.create_autospec(
+            DefaultAzureCredential, instance=True
+        )
+        default_azure_credential_mock.__aenter__.return_value = (
+            default_azure_credential_mock
+        )
+        default_azure_credential_mock.__aexit__.return_value = None
 
         enabled_secret_name = "EnabledSecretName"  # noqa: S105
         enabled_secret_value = "SecretValue"  # noqa: S105
         disabled_secret_name = "DisabledSecretName"  # noqa: S105
 
-        enabled_secret_properties = mocker.create_autospec(
+        enabled_secret_properties_mock = mocker.create_autospec(
             SecretProperties,
             instance=True,
         )
-        enabled_secret_properties.name = enabled_secret_name
-        enabled_secret_properties.enabled = True
+        enabled_secret_properties_mock.name = enabled_secret_name
+        enabled_secret_properties_mock.enabled = True
 
-        disabled_secret_properties = mocker.create_autospec(
+        disabled_secret_properties_mock = mocker.create_autospec(
             SecretProperties,
             instance=True,
         )
-        disabled_secret_properties.name = disabled_secret_name
-        disabled_secret_properties.enabled = False
+        disabled_secret_properties_mock.name = disabled_secret_name
+        disabled_secret_properties_mock.enabled = False
 
         async def list_properties_of_secrets() -> AsyncIterator[SecretProperties]:
-            yield enabled_secret_properties
-            yield disabled_secret_properties
+            yield enabled_secret_properties_mock
+            yield disabled_secret_properties_mock
 
-        secret_client = mocker.create_autospec(SecretClient, instance=True)
-        secret_client.__aenter__.return_value = secret_client
-        secret_client.__aexit__.return_value = None
-        secret_client.list_properties_of_secrets.return_value = (
+        secret_client_mock = mocker.create_autospec(SecretClient, instance=True)
+        secret_client_mock.__aenter__.return_value = secret_client_mock
+        secret_client_mock.__aexit__.return_value = None
+        secret_client_mock.list_properties_of_secrets.return_value = (
             list_properties_of_secrets()
         )
 
@@ -83,15 +87,15 @@ class TestAzureKeyVaultConfigurationProvider:
         )
         key_vault_secret_mock.value = enabled_secret_value
 
-        secret_client.get_secret.return_value = key_vault_secret_mock
+        secret_client_mock.get_secret.return_value = key_vault_secret_mock
         secret_client_patch = mocker.patch(
             f"{AzureKeyVaultConfigurationProvider.__module__}.{SecretClient.__qualname__}",
             autospec=True,
-            return_value=secret_client,
+            return_value=secret_client_mock,
         )
         provider = AzureKeyVaultConfigurationProvider(
             url=self.vault_url,
-            credential=credential,
+            credential=default_azure_credential_mock,
         )
 
         await provider.load()
@@ -99,47 +103,49 @@ class TestAzureKeyVaultConfigurationProvider:
         assert provider.data == {
             ConventionChanger.to_snake_case(enabled_secret_name): enabled_secret_value
         }
-        secret_client.get_secret.assert_called_once_with(enabled_secret_name)
+        secret_client_mock.get_secret.assert_called_once_with(enabled_secret_name)
         secret_client_patch.assert_called_once_with(
             vault_url=self.vault_url,
-            credential=credential,
+            credential=default_azure_credential_mock,
         )
 
     async def test_use_default_azure_credential_when_none_is_passed(
         self, mocker: MockerFixture
     ) -> None:
-        default_credential = mocker.create_autospec(
+        default_azure_credential_mock = mocker.create_autospec(
             DefaultAzureCredential, instance=True
         )
-        default_credential.__aenter__.return_value = default_credential
-        default_credential.__aexit__.return_value = None
+        default_azure_credential_mock.__aenter__.return_value = (
+            default_azure_credential_mock
+        )
+        default_azure_credential_mock.__aexit__.return_value = None
 
         async def iterate_secret_properties() -> AsyncIterator[Any]:
             if False:
-                secret_properties = mocker.create_autospec(
+                secret_properties_mock = mocker.create_autospec(
                     SecretProperties,
                     instance=True,
                 )
-                secret_properties.name = None
-                secret_properties.enabled = False
-                yield secret_properties
+                secret_properties_mock.name = None
+                secret_properties_mock.enabled = False
+                yield secret_properties_mock
 
-        secret_client = mocker.create_autospec(SecretClient, instance=True)
-        secret_client.__aenter__.return_value = secret_client
-        secret_client.__aexit__.return_value = None
-        secret_client.list_properties_of_secrets.return_value = (
+        secret_client_mock = mocker.create_autospec(SecretClient, instance=True)
+        secret_client_mock.__aenter__.return_value = secret_client_mock
+        secret_client_mock.__aexit__.return_value = None
+        secret_client_mock.list_properties_of_secrets.return_value = (
             iterate_secret_properties()
         )
 
         default_credential_patch = mocker.patch(
             f"{AzureKeyVaultConfigurationProvider.__module__}.{DefaultAzureCredential.__qualname__}",
             autospec=True,
-            return_value=default_credential,
+            return_value=default_azure_credential_mock,
         )
         secret_client_patch = mocker.patch(
             f"{AzureKeyVaultConfigurationProvider.__module__}.{SecretClient.__qualname__}",
             autospec=True,
-            return_value=secret_client,
+            return_value=secret_client_mock,
         )
         provider = AzureKeyVaultConfigurationProvider(url=self.vault_url)
 
@@ -148,42 +154,96 @@ class TestAzureKeyVaultConfigurationProvider:
         default_credential_patch.assert_called_once_with()
         secret_client_patch.assert_called_once_with(
             vault_url=self.vault_url,
-            credential=default_credential,
+            credential=default_azure_credential_mock,
         )
 
     async def test_skip_secret_without_name(self, mocker: MockerFixture) -> None:
-        credential = mocker.create_autospec(DefaultAzureCredential, instance=True)
-        credential.__aenter__.return_value = credential
-        credential.__aexit__.return_value = None
+        default_azure_credential_mock = mocker.create_autospec(
+            DefaultAzureCredential, instance=True
+        )
+        default_azure_credential_mock.__aenter__.return_value = (
+            default_azure_credential_mock
+        )
+        default_azure_credential_mock.__aexit__.return_value = None
 
-        unnamed_secret_properties = mocker.create_autospec(
+        secret_properties_mock = mocker.create_autospec(
             SecretProperties,
             instance=True,
         )
-        unnamed_secret_properties.name = None
-        unnamed_secret_properties.enabled = True
+        secret_properties_mock.name = None
+        secret_properties_mock.enabled = True
 
         async def list_properties_of_secrets() -> AsyncIterator[SecretProperties]:
-            yield unnamed_secret_properties
+            yield secret_properties_mock
 
-        secret_client = mocker.create_autospec(SecretClient, instance=True)
-        secret_client.__aenter__.return_value = secret_client
-        secret_client.__aexit__.return_value = None
-        secret_client.list_properties_of_secrets.return_value = (
+        secret_client_mock = mocker.create_autospec(SecretClient, instance=True)
+        secret_client_mock.__aenter__.return_value = secret_client_mock
+        secret_client_mock.__aexit__.return_value = None
+        secret_client_mock.list_properties_of_secrets.return_value = (
             list_properties_of_secrets()
         )
 
         mocker.patch(
             f"{AzureKeyVaultConfigurationProvider.__module__}.{SecretClient.__qualname__}",
             autospec=True,
-            return_value=secret_client,
+            return_value=secret_client_mock,
         )
         provider = AzureKeyVaultConfigurationProvider(
             url=self.vault_url,
-            credential=credential,
+            credential=default_azure_credential_mock,
         )
 
         await provider.load()
 
         assert provider.data == {}
-        secret_client.get_secret.assert_not_called()
+        secret_client_mock.get_secret.assert_not_called()
+
+    async def test_skip_secret_without_value(self, mocker: MockerFixture) -> None:
+        default_azure_credential_mock = mocker.create_autospec(
+            DefaultAzureCredential, instance=True
+        )
+        default_azure_credential_mock.__aenter__.return_value = (
+            default_azure_credential_mock
+        )
+        default_azure_credential_mock.__aexit__.return_value = None
+
+        secret_properties_mock = mocker.create_autospec(
+            SecretProperties,
+            instance=True,
+        )
+        secret_properties_mock.name = "SecretName"
+        secret_properties_mock.enabled = True
+
+        async def list_properties_of_secrets() -> AsyncIterator[SecretProperties]:
+            yield secret_properties_mock
+
+        secret_client_mock = mocker.create_autospec(SecretClient, instance=True)
+        secret_client_mock.__aenter__.return_value = secret_client_mock
+        secret_client_mock.__aexit__.return_value = None
+        secret_client_mock.list_properties_of_secrets.return_value = (
+            list_properties_of_secrets()
+        )
+
+        key_vault_secret_mock = mocker.create_autospec(
+            KeyVaultSecret,
+            instance=True,
+        )
+        key_vault_secret_mock.value = None
+        secret_client_mock.get_secret.return_value = key_vault_secret_mock
+
+        mocker.patch(
+            f"{AzureKeyVaultConfigurationProvider.__module__}.{SecretClient.__qualname__}",
+            autospec=True,
+            return_value=secret_client_mock,
+        )
+        provider = AzureKeyVaultConfigurationProvider(
+            url=self.vault_url,
+            credential=default_azure_credential_mock,
+        )
+
+        await provider.load()
+
+        assert provider.data == {}
+        secret_client_mock.get_secret.assert_called_once_with(
+            secret_properties_mock.name
+        )
