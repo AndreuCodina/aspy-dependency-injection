@@ -141,11 +141,7 @@ class ConfigurationManager(ConfigurationBuilder):
         value = self._try_get_configuration(key)
 
         if isinstance(value, WirioUndefined):
-            if default is not None:
-                return default
-
-            error_message = f"Missing configuration value for key '{key}'"
-            raise KeyError(error_message)
+            return default
 
         if isinstance(value_type, WirioUndefined):
             return value

@@ -10,7 +10,9 @@
 
 </div>
 
-## Features
+## Overview
+
+Wirio is a practical and easy-to-use dependency injection library for Python designed to work in any environment and application type:
 
 - **Use it everywhere:** Use dependency injection in web servers, background tasks, console applications, Jupyter notebooks, tests, etc.
 - **Lifetimes**: `Singleton` (same instance per application), `Scoped` (same instance per HTTP request scope) and `Transient` (different instance per resolution).
@@ -19,6 +21,7 @@
 - **Environment detection**: Detect the current environment and adjust configuration and behavior accordingly.
 - **Configuration providers**: Built-in configuration support, including integrations such as environment variables, configuration files and Azure Key Vault.
 - **Centralized setup**: Register all services in one place using a clean syntax, and without decorators.
+- **Integrations**: Optional and ready-to-use integrations for common libraries, such as SQLModel.
 - **ty** and **Pyright** strict compliant.
 
 ## 📦 Installation

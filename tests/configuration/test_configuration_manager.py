@@ -32,9 +32,9 @@ except ImportError:
 
 @final
 class _DictionaryConfigurationProvider(ConfigurationProvider):
-    _values: dict[str, Any]
+    _values: dict[str, str | None]
 
-    def __init__(self, values: dict[str, Any]) -> None:
+    def __init__(self, values: dict[str, str | None]) -> None:
         super().__init__()
         self._values = values
 
@@ -46,9 +46,9 @@ class _DictionaryConfigurationProvider(ConfigurationProvider):
 
 @final
 class _DictionaryConfigurationSource(ConfigurationSource):
-    _values: dict[str, Any]
+    _values: dict[str, str | None]
 
-    def __init__(self, values: dict[str, Any]) -> None:
+    def __init__(self, values: dict[str, str | None]) -> None:
         self._values = values
 
     @override
@@ -78,10 +78,12 @@ class TestConfigurationManager:
         expected_configuration_value = 1
         configuration_manager = ConfigurationManager(content_root_path="")
         configuration_manager.add(
-            _DictionaryConfigurationSource({"number": expected_configuration_value})
+            _DictionaryConfigurationSource(
+                {"number": str(expected_configuration_value)}
+            )
         )
 
-        configuration_value = configuration_manager.get_required_value("number")
+        configuration_value = configuration_manager.get_required_value("number", int)
 
         assert isinstance(configuration_value, int)
         assert configuration_value == expected_configuration_value
@@ -152,24 +154,23 @@ class TestConfigurationManager:
         expected_configuration_value = 1
         configuration_manager = ConfigurationManager(content_root_path="")
         configuration_manager.add(
-            _DictionaryConfigurationSource({"number": expected_configuration_value})
+            _DictionaryConfigurationSource(
+                {"number": str(expected_configuration_value)}
+            )
         )
 
-        configuration_value = configuration_manager.get_value("number")
+        configuration_value = configuration_manager.get_value("number", int)
 
         assert isinstance(configuration_value, int)
         assert configuration_value == expected_configuration_value
 
-    def test_fail_when_getting_missing_value(self) -> None:
+    def test_get_none_when_getting_missing_value(self) -> None:
         configuration_manager = ConfigurationManager(content_root_path="")
         configuration_manager.add(_DictionaryConfigurationSource({"app_name": "wirio"}))
 
-        with pytest.raises(KeyError) as exception_info:
-            configuration_manager.get_value("port")
+        configuration_value = configuration_manager.get_value("port")
 
-        assert (
-            exception_info.value.args[0] == "Missing configuration value for key 'port'"
-        )
+        assert configuration_value is None
 
     def test_fail_when_getting_value_with_invalid_type(self) -> None:
         configuration_manager = ConfigurationManager(content_root_path="")
