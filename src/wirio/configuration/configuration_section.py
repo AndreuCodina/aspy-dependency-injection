@@ -53,7 +53,7 @@ class ConfigurationSection:
         if key_or_value_type_or_none is None:
             return self._root.get_value(self._path)
 
-        if isinstance(key_or_value_type_or_none, type):
+        if not isinstance(key_or_value_type_or_none, str):
             value_type: type[TField] = key_or_value_type_or_none
             return self._root.get_value(self._path, value_type)
 

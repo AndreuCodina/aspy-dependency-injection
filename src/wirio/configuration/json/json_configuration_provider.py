@@ -12,13 +12,11 @@ from wirio.configuration.json.json_configuration_file_parser import (
 class JsonConfigurationProvider(ConfigurationProvider):
     _path: Final[Path]
     _optional: Final[bool]
-    _paths: Final[list[str]]
 
     def __init__(self, path: Path, optional: bool) -> None:
         super().__init__()
         self._path = path
         self._optional = optional
-        self._paths = []
 
     @override
     async def load(self) -> None:

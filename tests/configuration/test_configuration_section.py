@@ -58,19 +58,33 @@ class TestConfigurationSection:
         assert configuration_value == expected_value
         configuration_root_mock.get_value.assert_called_once_with(expected_path)
 
-    def test_get_value_specifying_type(self, mocker: MockerFixture) -> None:
-        expected_path = "logging:log_level:default"
-        expected_value = 1
+    @pytest.mark.parametrize(
+        argnames=("expected_path", "expected_value", "value_type"),
+        argvalues=[
+            ("logging:log_level:default", 1, int),
+            ("logging:log_level:default", "WARNING", str),
+            ("logging:log_level:default", [1, 2, 3], list[int]),
+        ],
+    )
+    def test_get_value_specifying_type[TField](
+        self,
+        expected_path: str,
+        expected_value: TField,
+        value_type: type[TField],
+        mocker: MockerFixture,
+    ) -> None:
         configuration_root_mock = mocker.create_autospec(
             ConfigurationRoot, instance=True
         )
         configuration_root_mock.get_value.return_value = expected_value
         section = ConfigurationSection(root=configuration_root_mock, path=expected_path)
 
-        configuration_value = section.get_value(int)
+        configuration_value = section.get_value(value_type)
 
         assert configuration_value == expected_value
-        configuration_root_mock.get_value.assert_called_once_with(expected_path, int)
+        configuration_root_mock.get_value.assert_called_once_with(
+            expected_path, value_type
+        )
 
     def test_get_value_for_section_with_subsections_below(
         self, mocker: MockerFixture

@@ -57,10 +57,10 @@ class JsonConfigurationFileParser:
         else:
             self._data[key] = str(value)
 
-    def _visit_array_element(self, arr: list[Any]) -> None:
+    def _visit_array_element(self, list_: list[Any]) -> None:
         index = 0
 
-        for item in arr:
+        for item in list_:
             self._enter_context(str(index))
             self._visit_value(item)
             self._exit_context()

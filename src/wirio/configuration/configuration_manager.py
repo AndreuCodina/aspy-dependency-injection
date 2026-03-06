@@ -149,12 +149,18 @@ class ConfigurationManager(ConfigurationBuilder, ConfigurationRoot):
 
     def get_model[TModel: BaseModel](self, model_type: type[TModel]) -> TModel:
         """Get a configuration model of the specified type. The configuration values will be mapped to the model fields by their names."""
-        values: dict[str, str | None] = {}
+        values: dict[str, Any] = {}
 
         for field_name, field_info in model_type.model_fields.items():
             value = self._try_get_configuration(field_name)
 
             if isinstance(value, WirioUndefined):
+                array_values = self._try_get_array_configuration(field_name)
+
+                if len(array_values) > 0:
+                    values[field_name] = array_values
+                    continue
+
                 if not field_info.is_required():
                     values[field_name] = field_info.get_default(
                         call_default_factory=True
@@ -168,6 +174,22 @@ class ConfigurationManager(ConfigurationBuilder, ConfigurationRoot):
                 values[field_name] = value
 
         return model_type.model_validate(values)
+
+    def _try_get_array_configuration(self, key: str) -> list[str | None]:
+        index = 0
+        values: list[str | None] = []
+
+        while True:
+            indexed_key = f"{key}:{index}"
+            value = self._try_get_configuration(indexed_key)
+
+            if isinstance(value, WirioUndefined):
+                break
+
+            values.append(value)
+            index += 1
+
+        return values
 
     def get_section(self, key: str) -> ConfigurationSection:
         """Get a configuration section for the specified key. A configuration section represents a subsection of the configuration values that share a common key prefix."""

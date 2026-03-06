@@ -1,6 +1,6 @@
 # Configuration
 
-# Overview
+## Overview
 
 Wirio includes a built-in configuration system.
 We can load values from multiple sources, then read them as single values, sections or Pydantic models.
@@ -26,7 +26,7 @@ services.configuration.add_azure_key_vault(
 )
 ```
 
-# Naming convention
+## Naming convention
 
 Each source (environment variables, JSON, Azure Key Vault...) has its own naming convention for keys. Wirio uses snake case for configuration keys. When loading from sources, keys are normalized to snake case. For example, the `APP_NAME` environment variable maps to `app_name`.
 
@@ -70,7 +70,7 @@ openai_api_key = services.configuration.get_value("openai_api_key")
 timeout_seconds = services.configuration.get_value("maximum_retries", int)
 ```
 
-### Defaults and required fields
+## Defaults and required fields
 
 If a model field has a default, that default is used when no value is found.
 

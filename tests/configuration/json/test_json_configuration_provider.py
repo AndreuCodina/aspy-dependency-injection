@@ -82,6 +82,8 @@ class TestJsonConfigurationProvider:
             notes: str | None
             price_as_float: float
             price_as_decimal: Decimal
+            int_list: list[int]
+            string_list: list[str]
 
         expected_app_name = "wirio"
         expected_port = 8080
@@ -89,9 +91,11 @@ class TestJsonConfigurationProvider:
         expected_notes = None
         expected_price_as_float = 19.99
         expected_price_as_decimal = Decimal("19.99")
+        expected_int_list = [1, 2, 3]
+        expected_string_list = ["a", "b", "c"]
         file_path = tmp_path / "appsettings.json"
         file_path.write_text(
-            '{"appName": "wirio", "port": 8080, "enabled": true, "notes": null, "priceAsFloat": 19.99, "priceAsDecimal": 19.99}',
+            '{"appName": "wirio", "port": 8080, "enabled": true, "notes": null, "priceAsFloat": 19.99, "priceAsDecimal": 19.99, "intList": [1, 2, 3], "stringList": ["a", "b", "c"]}',
             encoding="utf-8",
         )
 
@@ -109,3 +113,5 @@ class TestJsonConfigurationProvider:
         assert model.notes == expected_notes
         assert model.price_as_float == expected_price_as_float
         assert model.price_as_decimal == expected_price_as_decimal
+        assert model.int_list == expected_int_list
+        assert model.string_list == expected_string_list
