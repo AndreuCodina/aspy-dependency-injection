@@ -248,7 +248,7 @@ class SettingsBinder:
         if value_type is None:
             raw_value = settings.get_value(key)
         else:
-            raw_value = cast("object | None", settings.get_value(key, value_type))
+            raw_value = settings.get_value(key, value_type)
 
         if raw_value is None:
             return WirioUndefined.INSTANCE
