@@ -25,7 +25,7 @@ dependencies = ["pydantic>=2.12.5"]
 [project.urls]
 Homepage = "https://github.com/wirio-org/wirio"
 Repository = "https://github.com/wirio-org/wirio"
-Documentation = "https://github.com/wirio-org/wirio"
+Documentation = "https://wirio-org.github.io/wirio"
 Changelog = "https://github.com/wirio-org/wirio/releases"
 
 [project.optional-dependencies]
