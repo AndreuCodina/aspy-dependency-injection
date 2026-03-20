@@ -6,7 +6,7 @@ We have to use the service provider to resolve the services we want to test.
 
 === "FastAPI"
 
-    We have to import the services from the `app` singleton of `main.py`, and create a fixture to inject the service provider.
+    We have to import `services` from `main.py`, and create a fixture to inject the service provider.
 
     ```python
     from main import services
