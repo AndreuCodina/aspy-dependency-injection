@@ -211,8 +211,6 @@ We can also pass a custom async Azure credential with the `credential` parameter
 
 ## AWS Secrets Manager
 
-## AWS Secrets Manager
-
 Wirio can read settings values from AWS Secrets Manager.
 
 1. Install the optional dependency:
@@ -221,7 +219,7 @@ Wirio can read settings values from AWS Secrets Manager.
 uv add "wirio[aws-secrets-manager]"
 ```
 
-2. Add Key Vault as a source, specifying the secret name and, optionally, the region and URL:
+2. Add Secrets Manager as a source, specifying the secret identifier and, optionally, the region and URL:
 
 ```python
 services.settings.add_aws_secrets_manager(

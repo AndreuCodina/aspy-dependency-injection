@@ -9,15 +9,15 @@ from wirio.settings.settings_provider import SettingsProvider
 
 @final
 class AwsSecretsManagerSettingsProvider(SettingsProvider):
-    _secret_name: Final[str]
+    _secret_id: Final[str]
     _region: Final[str | None]
     _url: Final[str | None]
 
     def __init__(
-        self, secret_name: str, region: str | None = None, url: str | None = None
+        self, secret_id: str, region: str | None = None, url: str | None = None
     ) -> None:
         super().__init__()
-        self._secret_name = secret_name
+        self._secret_id = secret_id
         self._region = region
         self._url = url
 
@@ -33,7 +33,7 @@ class AwsSecretsManagerSettingsProvider(SettingsProvider):
         )
         secret = cast(
             "dict[str, Any]",
-            secrets_manager_client.get_secret_value(SecretId=self._secret_name),
+            secrets_manager_client.get_secret_value(SecretId=self._secret_id),
         )
         secret_value_str = cast("str", secret["SecretString"])
         secret_value_json = json.loads(secret_value_str)

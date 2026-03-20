@@ -72,7 +72,7 @@ class TestAwsSecretsManagerSettingsProvider:
             return_value=secrets_manager_client_mock,
         )
         provider = AwsSecretsManagerSettingsProvider(
-            secret_name=expected_secret_name,
+            secret_id=expected_secret_name,
             region=expected_region,
             url=expected_url,
         )
@@ -99,12 +99,22 @@ class TestAwsSecretsManagerSettingsProvider:
         os.environ.get("CI") is None,
         reason="Slow tests",
     )
-    async def test_load_secret_from_localstack_secrets_manager(self) -> None:
+    async def test_load_secret_from_localstack_secrets_manager(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
         expected_region = "us-east-1"
         expected_secret_name = "dev/TestApp"  # noqa: S105
         expected_api_key = "12345"
         expected_database_user = "user1"
         expected_database_password = "pass1"  # noqa: S105
+        mocker.patch.dict(
+            os.environ,
+            {
+                "AWS_ACCESS_KEY_ID": "test",
+                "AWS_SECRET_ACCESS_KEY": "test",
+            },
+        )
         local_stack_container = LocalStackContainer(
             image=self.LOCAL_STACK_IMAGE,
             region_name=expected_region,
@@ -120,7 +130,7 @@ class TestAwsSecretsManagerSettingsProvider:
                 SecretString='{"ServiceApiKey": "12345", "Database": {"User": "user1", "Password": "pass1"}}',
             )
             provider = AwsSecretsManagerSettingsProvider(
-                secret_name=expected_secret_name,
+                secret_id=expected_secret_name,
                 region=expected_region,
                 url=local_stack_container.get_url(),
             )

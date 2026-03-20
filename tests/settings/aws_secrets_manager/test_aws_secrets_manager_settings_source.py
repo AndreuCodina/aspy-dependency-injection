@@ -46,7 +46,7 @@ class TestAwsSecretsManagerSettingsSource:
             return_value=settings_provider_mock,
         )
         source = AwsSecretsManagerSettingsSource(
-            secret_name=expected_secret_name,
+            secret_id=expected_secret_name,
             region=expected_region,
             url=expected_url,
         )

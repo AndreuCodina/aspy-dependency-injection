@@ -362,7 +362,7 @@ class TestSettingsManager:
         )
 
         settings_manager.add_aws_secrets_manager(
-            secret_name=expected_secret_name,
+            secret_id=expected_secret_name,
             region=expected_region,
             url=expected_url,
         )
