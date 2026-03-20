@@ -2,11 +2,9 @@
 
 ## Quickstart
 
-We have to use the service provider to resolve the services we want to test. The way to get it depends on the type of application we are testing.
+We have to use the service provider to resolve the services we want to test.
 
 === "FastAPI"
-
-    The way FastAPI has to execute code before running the tests is different from a console application. It uses its own test client that creates an application instance for each test.
 
     We have to import the services from the `app` singleton of `main.py`, and create a fixture to inject the service provider.
 
@@ -15,14 +13,19 @@ We have to use the service provider to resolve the services we want to test. The
     from wirio.integrations.fastapi import get_service_provider
 
     @pytest.fixture
-    def service_provider() -> Generator[ServiceProvider]:
-        with TestClient(app):
-            yield get_service_provider(app)
+    async def service_provider() -> AsyncGenerator[ServiceProvider]:
+        async with services.build_service_provider() as service_provider:
+            yield service_provider
     ```
+
+    !!! note "Note"
+
+        If you're thinking about FastAPI's TestClient, it doesn't work well with async, and `AsyncClient` doesn't execute lifespan events.
 
 === "Console application"
 
-    We have to import the services from `main.py`. To do that, we can create the function `configure_services` (or move the `services` variable outside the `main` function).
+    We can't import the `ServiceProvider` directly from `main.py` because it's created inside the `main` function.
+    We have to create the function `configure_services` (or move the `services` variable outside the `main` function).
 
     ```python
     def configure_services() -> ServiceCollection:
@@ -74,32 +77,15 @@ async def test_create_user(service_provider: ServiceProvider, mocker: MockerFixt
 
 We can also override a service for all tests by modifying the fixture that provides the `ServiceProvider` instance. This is useful when we want to use a mock for a service across multiple tests, or all tests.
 
-=== "FastAPI"
+```python
+@pytest.fixture
+async def service_provider(mocker: MockerFixture) -> AsyncGenerator[ServiceProvider]:
+    async with services.build_service_provider() as service_provider:
+        email_service_mock = mocker.create_autospec(EmailService, instance=True)
 
-    ```python
-    @pytest.fixture
-    def service_provider(mocker: MockerFixture) -> Generator[ServiceProvider]:
-        with TestClient(app):
-            service_provider = get_service_provider(app)
-            email_service_mock = mocker.create_autospec(EmailService, instance=True)
-
-            with service_provider.override_service(EmailService, email_service_mock):
-                yield service_provider
-    ```
-
-=== "Console application"
-
-    ```python
-    @pytest.fixture
-    async def service_provider(mocker: MockerFixture) -> AsyncGenerator[ServiceProvider]:
-        services = configure_services()
-
-        async with services.build_service_provider() as service_provider:
-            email_service_mock = mocker.create_autospec(EmailService, instance=True)
-
-            with service_provider.override_service(EmailService, email_service_mock):
-                yield service_provider
-    ```
+        with service_provider.override_service(EmailService, email_service_mock):
+            yield service_provider
+```
 
 ## ServiceCollection registration
 
