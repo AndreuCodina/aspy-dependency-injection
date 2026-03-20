@@ -19,7 +19,7 @@ Wirio is a practical and easy-to-use dependency injection library for Python des
 - **FastAPI integration** out of the box, and pluggable to any web framework.
 - **Automatic resolution and disposal**: Automatically resolve constructor parameters and manage async and non-async context managers. It's no longer our concern to know how to create or dispose services.
 - **Environment detection**: Detect the current environment and adjust settings and behavior accordingly.
-- **Settings providers**: Built-in settings support, including integrations such as environment variables, settings files and Azure Key Vault.
+- **Settings providers**: Built-in settings support, including integrations such as environment variables, settings files, Azure Key Vault and AWS Secrets Manager.
 - **Centralized setup**: Register all services in one place using a clean syntax, and without decorators.
 - **Integrations**: Optional and ready-to-use integrations for common libraries, such as SQLModel.
 - **ty** and **Pyright** strict compliant.
