@@ -23,7 +23,7 @@ We have to use the service provider to resolve the services we want to test.
 
 === "Console application"
 
-    We can't import the `ServiceProvider` directly from `main.py` because it's created inside the `main` function.
+    We can't import `services` directly from `main.py` because it's created inside the `main` function.
     We have to create the function `configure_services` (or move the `services` variable outside the `main` function).
 
     ```python
