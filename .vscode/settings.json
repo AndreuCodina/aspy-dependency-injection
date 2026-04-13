@@ -14,8 +14,7 @@
     "[ipynb]": {
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "python.languageServer": "Pylance",
-    "python.analysis.languageServerMode": "full",
+    "python.languageServer": "None",
     "python.testing.pytestEnabled": true,
     "notebook.formatOnSave.enabled": true,
     "notebook.formatOnCellExecution": true,
