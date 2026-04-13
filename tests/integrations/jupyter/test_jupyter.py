@@ -92,3 +92,69 @@ class TestJupyter:
 
         output = json.loads(result.stdout)["cells"][3]["outputs"][0]["text"][0].strip()
         assert output == str(expected_content_root_path)
+
+    def test_get_caller_directory_as_content_root_path_when_no_content_root_path_is_provided(
+        self,
+    ) -> None:
+        current_path = Path(__file__).parent.resolve()
+        expected_content_root_path = str(current_path)
+        notebook = (
+            current_path
+            / "get_caller_directory_as_content_root_path_when_no_content_root_path_is_provided.ipynb"
+        )
+
+        result = subprocess.run(  # noqa: S603
+            [  # noqa: S607
+                "uv",
+                "run",
+                "jupyter",
+                "nbconvert",
+                "--to",
+                "notebook",
+                "--execute",
+                "--stdout",
+                "--ExecutePreprocessor.timeout=10",
+                str(notebook),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+        output = json.loads(result.stdout)["cells"][1]["outputs"][0]["text"][0].strip()
+        assert output == expected_content_root_path
+
+    def test_get_caller_directory_as_content_root_path_when_no_content_root_path_is_provided_and_function_is_defined_in_another_file(
+        self,
+    ) -> None:
+        expected_content_root_path = str((Path.cwd() / "tests/utils").resolve())
+        current_path = Path(__file__).parent.resolve()
+        notebook = (
+            current_path
+            / "get_caller_directory_as_content_root_path_when_no_content_root_path_is_provided_and_function_is_defined_in_another_file.ipynb"
+        )
+
+        result = subprocess.run(  # noqa: S603
+            [  # noqa: S607
+                "uv",
+                "run",
+                "jupyter",
+                "nbconvert",
+                "--to",
+                "notebook",
+                "--execute",
+                "--stdout",
+                "--ExecutePreprocessor.timeout=10",
+                str(notebook),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+        output = json.loads(result.stdout)["cells"][3]["outputs"][0]["text"][0].strip()
+        assert output == str(expected_content_root_path)

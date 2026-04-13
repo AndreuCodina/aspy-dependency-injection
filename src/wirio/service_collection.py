@@ -1,5 +1,4 @@
 import inspect
-import sys
 import typing
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Iterator
 from pathlib import Path
@@ -9,6 +8,7 @@ from pydantic import BaseModel
 
 from wirio._service_lookup._typed_type import TypedType
 from wirio._utils._extra_dependencies import ExtraDependencies
+from wirio._utils._python_runtime_path import PythonRuntimePath
 from wirio.exceptions import (
     NoKeyedSingletonServiceRegisteredError,
     NoSingletonServiceRegisteredError,
@@ -1353,7 +1353,9 @@ class ServiceCollection:
                 resolved_current_frame_path = current_frame_path.resolve()
 
                 if package_root not in resolved_current_frame_path.parents:
-                    if self._is_python_runtime_path(resolved_current_frame_path):
+                    if PythonRuntimePath.is_python_runtime_path(
+                        resolved_current_frame_path
+                    ):
                         found_only_runtime_external_frames = True
                         stack_frame = stack_frame.f_back
                         continue
@@ -1372,19 +1374,6 @@ class ServiceCollection:
             return str(Path(frame_filename).parent.resolve())
         finally:
             del current_frame
-
-    def _is_python_runtime_path(self, resolved_path: Path) -> bool:
-        runtime_prefixes = {
-            Path(sys.prefix).resolve(),
-            Path(sys.exec_prefix).resolve(),
-            Path(sys.base_prefix).resolve(),
-            Path(sys.base_exec_prefix).resolve(),
-        }
-
-        return any(
-            runtime_prefix == resolved_path or runtime_prefix in resolved_path.parents
-            for runtime_prefix in runtime_prefixes
-        )
 
     def _populate(self) -> None:
         self.add_singleton(HostEnvironment, self._host_environment)

@@ -27,6 +27,7 @@ from tests.utils.services import (
     create_test_services,
 )
 from wirio._service_lookup._typed_type import TypedType
+from wirio._utils._python_runtime_path import PythonRuntimePath
 from wirio.abstractions.base_service_provider import BaseServiceProvider
 from wirio.abstractions.keyed_service import KeyedService
 from wirio.abstractions.service_provider_is_keyed_service import (
@@ -2521,8 +2522,8 @@ class TestServiceCollection:
             return_value=current_frame,
         )
         mocker.patch.object(
-            ServiceCollection,
-            ServiceCollection._is_python_runtime_path.__name__,  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
+            PythonRuntimePath,
+            PythonRuntimePath.is_python_runtime_path.__name__,
             autospec=True,
             return_value=True,
         )
@@ -2557,8 +2558,8 @@ class TestServiceCollection:
             return_value=current_frame,
         )
         mocker.patch.object(
-            ServiceCollection,
-            ServiceCollection._is_python_runtime_path.__name__,  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
+            PythonRuntimePath,
+            PythonRuntimePath.is_python_runtime_path.__name__,
             autospec=True,
             return_value=True,
         )

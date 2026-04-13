@@ -2,6 +2,7 @@ from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from types import TracebackType
 from typing import Self, override
 
+from wirio.hosting import HostEnvironment
 from wirio.service_collection import ServiceCollection
 
 
@@ -141,3 +142,7 @@ class ServiceWithOptionalDependencyWithDefault:
 
 def create_test_services() -> ServiceCollection:
     return ServiceCollection()
+
+
+def create_host_environment() -> HostEnvironment:
+    return HostEnvironment()

@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import Coroutine
 from pathlib import Path
 from threading import Thread
-from typing import TYPE_CHECKING, Any, cast, final, override
+from typing import TYPE_CHECKING, Any, Final, cast, final, override
 
 from pydantic import TypeAdapter
 
@@ -37,8 +37,8 @@ else:
 
 @final
 class SettingsManager(SettingsBuilder, SettingsRoot):
-    _sources: list[SettingsSource]
-    _providers: list[SettingsProvider]
+    _sources: Final[list[SettingsSource]]
+    _providers: Final[list[SettingsProvider]]
 
     def __init__(self, content_root_path: str) -> None:
         self._content_root_path = content_root_path
