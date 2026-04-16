@@ -23,7 +23,7 @@ class HostEnvironment:
                 If not provided, the content root path will be inferred from the caller file path.
 
         """
-        self._environment_name = self.get_current_environment_name()
+        self._environment_name = HostEnvironment.get_current_environment_name()
         self._content_root_path = (
             content_root_path
             if content_root_path is not None

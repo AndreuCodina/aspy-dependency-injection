@@ -1156,7 +1156,7 @@ class TestSettingsManager:
 
         add_defaults_patch.assert_not_called()
 
-    def test_add_defaults_in_expeected_order_and_using_current_environment_name(
+    def test_add_defaults_in_expected_order_and_using_current_environment_name(
         self, mocker: MockerFixture, tmp_path: Path
     ) -> None:
         expected_environment_name = "development"
