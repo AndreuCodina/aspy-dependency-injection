@@ -76,7 +76,8 @@ class SettingsManager(SettingsBuilder, SettingsRoot):
         return (
             self.add_json_file("settings.json", optional=True)
             .add_json_file(
-                f"settings.{HostEnvironment.environment_name}.json", optional=True
+                f"settings.{HostEnvironment.get_current_environment_name()}.json",
+                optional=True,
             )
             .add_environment_variables()
         )

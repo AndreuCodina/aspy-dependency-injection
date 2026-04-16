@@ -1,3 +1,4 @@
+import os
 import re
 from collections.abc import Sequence
 from pathlib import Path
@@ -8,6 +9,15 @@ from pydantic import BaseModel, Field
 from pytest_mock import MockerFixture
 
 from wirio._utils._extra_dependencies import ExtraDependencies
+from wirio.hosting._environment_variable import EnvironmentVariable
+from wirio.settings.environment_variables.environment_variables_settings_provider import (
+    EnvironmentVariablesSettingsProvider,
+)
+from wirio.settings.environment_variables.environment_variables_settings_source import (
+    EnvironmentVariablesSettingsSource,
+)
+from wirio.settings.json.json_settings_provider import JsonSettingsProvider
+from wirio.settings.json.json_settings_source import JsonSettingsSource
 from wirio.settings.settings_builder import SettingsBuilder
 from wirio.settings.settings_manager import SettingsManager
 from wirio.settings.settings_provider import SettingsProvider
@@ -1145,3 +1155,36 @@ class TestSettingsManager:
         SettingsManager(content_root_path="", add_default_providers=False)
 
         add_defaults_patch.assert_not_called()
+
+    def test_add_defaults_in_expeected_order_and_using_current_environment_name(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        expected_environment_name = "development"
+        expected_json_file_name = f"settings.{expected_environment_name}.json"
+        expected_sources_count = 3
+        expected_providers_count = 3
+
+        mocker.patch.dict(
+            os.environ,
+            {EnvironmentVariable.WIRIO_ENVIRONMENT.value: expected_environment_name},
+        )
+
+        settings_manager = SettingsManager(content_root_path=str(tmp_path))
+
+        assert len(settings_manager.sources) == expected_sources_count
+        assert len(settings_manager.providers) == expected_providers_count
+        assert isinstance(settings_manager.sources[0], JsonSettingsSource)
+        assert isinstance(settings_manager.providers[0], JsonSettingsProvider)
+        assert isinstance(settings_manager.sources[1], JsonSettingsSource)
+        assert isinstance(settings_manager.providers[1], JsonSettingsProvider)
+        assert isinstance(
+            settings_manager.sources[2], EnvironmentVariablesSettingsSource
+        )
+        assert isinstance(
+            settings_manager.providers[2],
+            EnvironmentVariablesSettingsProvider,
+        )
+
+        json_source = settings_manager.sources[1]
+        assert isinstance(json_source, JsonSettingsSource)
+        assert json_source._path.name == expected_json_file_name  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
