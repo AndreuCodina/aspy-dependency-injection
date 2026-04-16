@@ -72,7 +72,7 @@ class HostEnvironment:
             return str(Path.cwd().resolve())
 
         package_root = Path(__file__).resolve().parent
-        current_working_directory = Path.cwd().resolve()
+        current_working_directory = Path.cwd().expanduser().resolve()
 
         try:
             stack_frame = current_frame.f_back

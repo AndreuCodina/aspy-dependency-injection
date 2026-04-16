@@ -1324,10 +1324,10 @@ class ServiceCollection:
         current_frame = inspect.currentframe()
 
         if current_frame is None:
-            return str(Path.cwd().resolve())
+            return str(Path.cwd().expanduser().resolve())
 
         try:
-            current_working_directory = Path.cwd().resolve()
+            current_working_directory = Path.cwd().expanduser().resolve()
             package_root = Path(__file__).resolve().parent
             frame_filename = ""
 
