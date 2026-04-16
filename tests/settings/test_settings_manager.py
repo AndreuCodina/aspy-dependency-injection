@@ -1,3 +1,4 @@
+import os
 import re
 from collections.abc import Sequence
 from pathlib import Path
@@ -8,6 +9,15 @@ from pydantic import BaseModel, Field
 from pytest_mock import MockerFixture
 
 from wirio._utils._extra_dependencies import ExtraDependencies
+from wirio.hosting._environment_variable import EnvironmentVariable
+from wirio.settings.environment_variables.environment_variables_settings_provider import (
+    EnvironmentVariablesSettingsProvider,
+)
+from wirio.settings.environment_variables.environment_variables_settings_source import (
+    EnvironmentVariablesSettingsSource,
+)
+from wirio.settings.json.json_settings_provider import JsonSettingsProvider
+from wirio.settings.json.json_settings_source import JsonSettingsSource
 from wirio.settings.settings_builder import SettingsBuilder
 from wirio.settings.settings_manager import SettingsManager
 from wirio.settings.settings_provider import SettingsProvider
@@ -78,7 +88,9 @@ class _Settings(BaseModel):
 class TestSettingsManager:
     def test_get_required_value(self) -> None:
         expected_setting_value = "wirio"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"app_name": expected_setting_value})
         )
@@ -90,7 +102,9 @@ class TestSettingsManager:
 
     def test_get_required_value_specifying_type(self) -> None:
         expected_setting_value = 1
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"number": str(expected_setting_value)})
         )
@@ -101,7 +115,9 @@ class TestSettingsManager:
         assert setting_value == expected_setting_value
 
     def test_fail_when_getting_missing_required_value(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": "wirio"}))
 
         with pytest.raises(KeyError) as exception_info:
@@ -110,7 +126,9 @@ class TestSettingsManager:
         assert exception_info.value.args[0] == "Missing setting value for key 'port'"
 
     def test_fail_when_getting_required_value_with_invalid_type(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"number": "not-a-number"}))
 
         with pytest.raises(
@@ -121,7 +139,9 @@ class TestSettingsManager:
         assert "validation error" in str(exception_info.value)
 
     def test_fail_when_required_value_is_none(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": None}))
 
         with pytest.raises(
@@ -133,7 +153,9 @@ class TestSettingsManager:
 
     def test_get_value(self) -> None:
         expected_setting_value = "wirio"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"app_name": expected_setting_value})
         )
@@ -145,7 +167,9 @@ class TestSettingsManager:
 
     def test_get_none_value_when_getting_value_with_none_value(self) -> None:
         expected_setting_value = None
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"app_name": expected_setting_value})
         )
@@ -159,7 +183,9 @@ class TestSettingsManager:
         self,
     ) -> None:
         expected_setting_value = None
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"app_name": expected_setting_value})
         )
@@ -171,7 +197,9 @@ class TestSettingsManager:
 
     def test_get_value_specifying_type(self) -> None:
         expected_setting_value = 1
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"number": str(expected_setting_value)})
         )
@@ -182,7 +210,9 @@ class TestSettingsManager:
         assert setting_value == expected_setting_value
 
     def test_get_none_when_getting_missing_value(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": "wirio"}))
 
         setting_value = settings_manager.get_value("port")
@@ -190,7 +220,9 @@ class TestSettingsManager:
         assert setting_value is None
 
     def test_fail_when_getting_value_with_invalid_type(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"number": "not-a-number"}))
 
         with pytest.raises(
@@ -207,7 +239,9 @@ class TestSettingsManager:
 
         expected_app_name = "wirio"
         expected_port = 8080
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -226,7 +260,9 @@ class TestSettingsManager:
     async def test_add_source_when_event_loop_is_running(self) -> None:
         expected_app_name = "wirio"
         expected_port = "8080"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {"app_name": expected_app_name, "port": expected_port}
@@ -241,7 +277,9 @@ class TestSettingsManager:
     def test_add_source_when_event_loop_is_not_running(self) -> None:
         expected_app_name = "wirio"
         expected_port = "8080"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {"app_name": expected_app_name, "port": expected_port}
@@ -257,7 +295,9 @@ class TestSettingsManager:
         expected_app_name = "wirio"
         expected_port = "9090"
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"app_name": "wirio", "port": "8080"})
         )
@@ -274,7 +314,9 @@ class TestSettingsManager:
             port: int | None = None
 
         expected_app_name = "wirio"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": expected_app_name}))
 
         settings = settings_manager.get_model(Settings)
@@ -283,7 +325,9 @@ class TestSettingsManager:
         assert settings.port is None
 
     def test_fail_when_required_value_of_a_model_is_missing(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": "wirio"}))
 
         with pytest.raises(KeyError) as exception_info:
@@ -294,7 +338,9 @@ class TestSettingsManager:
     def test_convert_source_names_to_snake_case(self) -> None:
         expected_app_name = "wirio"
         expected_port = "8080"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {"APP_NAME": expected_app_name, "PORT": expected_port}
@@ -309,7 +355,9 @@ class TestSettingsManager:
     def test_return_added_sources(self) -> None:
         expected_sources = 2
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         source1 = _DictionarySettingsSource({"app_name": "wirio"})
         source2 = _DictionarySettingsSource({"port": "8080"})
         settings_manager.add(source1)
@@ -331,7 +379,9 @@ class TestSettingsManager:
             AsyncTokenCredential,
             instance=True,
         )
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         add_patch = mocker.patch.object(
             settings_manager,
             settings_manager.add.__name__,
@@ -355,7 +405,9 @@ class TestSettingsManager:
         expected_secret_name = "dev/TestApp"  # noqa: S105
         expected_region = "eu-west-1"
         expected_url = "https://secretsmanager.eu-west-1.amazonaws.com"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         add_patch = mocker.patch.object(
             settings_manager,
             settings_manager.add.__name__,
@@ -379,7 +431,9 @@ class TestSettingsManager:
 
         expected_app_name = "wirio"
         expected_api_url = "https://localhost"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": expected_app_name}))
 
         settings = settings_manager.get_model(Settings)
@@ -396,7 +450,9 @@ class TestSettingsManager:
     )
     def test_get_section(self, section_key: str, expected_path: str) -> None:
         expected_database_host = "localhost"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {"logging:log_level:default": expected_database_host}
@@ -408,7 +464,9 @@ class TestSettingsManager:
         assert section.path == expected_path
 
     def test_fail_when_getting_value_as_section(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"logging:log_level:default": "INFO"})
         )
@@ -420,7 +478,9 @@ class TestSettingsManager:
             settings_manager.get_section("logging:log_level:default")
 
     def test_fail_when_getting_sequence_as_section(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"node:0": "first", "node:1": "second"})
         )
@@ -431,7 +491,9 @@ class TestSettingsManager:
             settings_manager.get_section("node")
 
     def test_get_section_when_at_least_one_key_is_section(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -486,7 +548,9 @@ class TestSettingsManager:
         expected_log_level_default = "WARNING"
         expected_int_list = [1, 2, 3]
         expected_not_found_service_list = None
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -546,7 +610,9 @@ class TestSettingsManager:
 
     def test_bind_value_from_settings(self) -> None:
         expected_setting_value = 42
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"service:port": str(expected_setting_value)})
         )
@@ -559,7 +625,9 @@ class TestSettingsManager:
 
     def test_bind_required_value_from_settings(self) -> None:
         expected_setting_value = 42
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource({"service:port": str(expected_setting_value)})
         )
@@ -571,7 +639,9 @@ class TestSettingsManager:
         assert setting_value == expected_setting_value
 
     def test_fail_when_binding_missing_required_value_from_settings(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"app_name": "wirio"}))
 
         with pytest.raises(KeyError) as exception_info:
@@ -591,7 +661,9 @@ class TestSettingsManager:
 
         expected_port = 8080
         expected_host = "localhost"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -618,7 +690,9 @@ class TestSettingsManager:
         expected_int_list = [1, 2, 3]
         expected_description = "list metadata"
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -653,7 +727,9 @@ class TestSettingsManager:
         expected_int_list = [1, 2, 3]
         expected_float = 0.75
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -675,7 +751,9 @@ class TestSettingsManager:
         self,
     ) -> None:
         expected_child_sections = 4
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -698,7 +776,9 @@ class TestSettingsManager:
         self,
     ) -> None:
         expected_child_sections = 4
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -729,7 +809,9 @@ class TestSettingsManager:
         class Settings(BaseModel):
             servers: list[Server]
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"servers:0:name": "api"}))
 
         settings = settings_manager.get_model(Settings)
@@ -740,7 +822,9 @@ class TestSettingsManager:
 
     def test_get_empty_string(self) -> None:
         key = "ports"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({key: ""}))
 
         value = settings_manager.get_value(key, str)
@@ -759,7 +843,9 @@ class TestSettingsManager:
             required_field_2: int
             subsettings: SubSettings | None = None
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({"required_field_1": "value"}))
 
         with pytest.raises(
@@ -793,7 +879,9 @@ class TestSettingsManager:
             service_1: ServiceSettings | None = None
             service_2: ServiceSettings | None
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({}))
 
         settings = settings_manager.get_model(Settings)
@@ -821,7 +909,9 @@ class TestSettingsManager:
             ports: list[str]
 
         model_class = IntSettings if field_type is int else StringSettings
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource(setting_values))
 
         settings = settings_manager.get_model(model_class)
@@ -845,7 +935,9 @@ class TestSettingsManager:
     )
     def test_get_empty_sequence[TField](self, field_type: type[TField]) -> None:
         key = "ports"
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource({key: ""}))
 
         value = settings_manager.get_value(key, field_type)
@@ -866,7 +958,9 @@ class TestSettingsManager:
         class Settings(BaseModel):
             servers: list[Server]
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -918,7 +1012,9 @@ class TestSettingsManager:
             ports: dict[str, str]
 
         model_class = IntSettings if field_type is int else StringSettings
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(_DictionarySettingsSource(setting_values))
 
         settings = settings_manager.get_model(model_class)
@@ -943,7 +1039,9 @@ class TestSettingsManager:
         class Settings(BaseModel):
             services: dict[str, Service]
 
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -969,7 +1067,9 @@ class TestSettingsManager:
 
     def test_return_sections_ignoring_values(self) -> None:
         expected_child_sections = 2
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -988,7 +1088,9 @@ class TestSettingsManager:
 
     def test_ignore_malformed_child_key_when_getting_children(self) -> None:
         expected_child_sections = 2
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -1006,7 +1108,9 @@ class TestSettingsManager:
         assert child_keys == ["section_1", "section_2"]
 
     def test_fail_when_getting_object_list_as_section(self) -> None:
-        settings_manager = SettingsManager(content_root_path="")
+        settings_manager = SettingsManager(
+            content_root_path="", add_default_providers=False
+        )
         settings_manager.add(
             _DictionarySettingsSource(
                 {
@@ -1024,6 +1128,63 @@ class TestSettingsManager:
     def test_get_current_working_directory_as_default_content_root_path(self) -> None:
         expected_content_root_path = str(Path.cwd())
 
-        settings_manager = SettingsManager()
+        settings_manager = SettingsManager(add_default_providers=False)
 
         assert settings_manager._content_root_path == expected_content_root_path  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
+
+    def test_add_default_providers_by_default(self, mocker: MockerFixture) -> None:
+        add_defaults_patch = mocker.patch.object(
+            SettingsManager,
+            SettingsManager.add_defaults.__name__,
+            autospec=True,
+        )
+
+        SettingsManager(content_root_path="")
+
+        add_defaults_patch.assert_called_once()
+
+    def test_not_add_default_providers_when_disabled(
+        self, mocker: MockerFixture
+    ) -> None:
+        add_defaults_patch = mocker.patch.object(
+            SettingsManager,
+            SettingsManager.add_defaults.__name__,
+            autospec=True,
+        )
+
+        SettingsManager(content_root_path="", add_default_providers=False)
+
+        add_defaults_patch.assert_not_called()
+
+    def test_add_defaults_in_expected_order_and_using_current_environment_name(
+        self, mocker: MockerFixture, tmp_path: Path
+    ) -> None:
+        expected_environment_name = "development"
+        expected_json_file_name = f"settings.{expected_environment_name}.json"
+        expected_sources_count = 3
+        expected_providers_count = 3
+
+        mocker.patch.dict(
+            os.environ,
+            {EnvironmentVariable.WIRIO_ENVIRONMENT.value: expected_environment_name},
+        )
+
+        settings_manager = SettingsManager(content_root_path=str(tmp_path))
+
+        assert len(settings_manager.sources) == expected_sources_count
+        assert len(settings_manager.providers) == expected_providers_count
+        assert isinstance(settings_manager.sources[0], JsonSettingsSource)
+        assert isinstance(settings_manager.providers[0], JsonSettingsProvider)
+        assert isinstance(settings_manager.sources[1], JsonSettingsSource)
+        assert isinstance(settings_manager.providers[1], JsonSettingsProvider)
+        assert isinstance(
+            settings_manager.sources[2], EnvironmentVariablesSettingsSource
+        )
+        assert isinstance(
+            settings_manager.providers[2],
+            EnvironmentVariablesSettingsProvider,
+        )
+
+        json_source = settings_manager.sources[1]
+        assert isinstance(json_source, JsonSettingsSource)
+        assert json_source._path.name == expected_json_file_name  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
